@@ -32,7 +32,7 @@ jobs:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
           if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
-            echo "::error::The RENDER_DEPLOY_HOOK_URL secret is missing in the production environment. Nothing was deployed."
+            echo "::error::The RENDER_DEPLOY_HOOK_URL secret is missing in the producao environment. Nothing was deployed."
             exit 1
           fi
           curl --fail --silent --show-error --output /dev/null --request POST "$RENDER_DEPLOY_HOOK_URL"
@@ -56,7 +56,7 @@ jobs:
           [ "$ORG_CONFIGURED" = "true" ] || missing="$missing VERCEL_ORG_ID"
           [ "$PROJECT_CONFIGURED" = "true" ] || missing="$missing VERCEL_PROJECT_ID"
           if [ -n "$missing" ]; then
-            echo "::error::Missing secrets in the production environment:$missing. The API was deployed; the frontend was not."
+            echo "::error::Missing secrets in the producao environment:$missing. The API was deployed; the frontend was not."
             exit 1
           fi
 
