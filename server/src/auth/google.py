@@ -15,9 +15,8 @@ GOOGLE_SCOPES = "openid email profile"
 GOOGLE_ERRORS = (AuthlibBaseError, JoseError, httpx2.HTTPError, ValueError)
 
 
-class GoogleLoginFailed(Exception):
-    def __init__(self) -> None:
-        super().__init__("Não foi possível entrar com o Google. Tente novamente.")
+class GoogleLoginError(Exception):
+    pass
 
 
 def register_google_app(client_id: str, client_secret: str) -> StarletteOAuth2App:
@@ -33,7 +32,7 @@ def register_google_app(client_id: str, client_secret: str) -> StarletteOAuth2Ap
 def extract_profile(userinfo: dict[str, Any]) -> UserProfile:
     email = userinfo.get("email")
     if not email or not userinfo.get("email_verified"):
-        raise GoogleLoginFailed
+        raise GoogleLoginError("Google did not return a verified e-mail.")
     email = email.lower()
     return UserProfile(
         email=email, name=userinfo.get("name") or email, picture_url=userinfo.get("picture")
@@ -48,13 +47,13 @@ class GoogleClient:
         try:
             return await self._google_app.authorize_redirect(request, callback_url)
         except GOOGLE_ERRORS as error:
-            raise GoogleLoginFailed from error
+            raise GoogleLoginError("Could not start the Google login.") from error
 
     async def fetch_profile(self, request: Request) -> UserProfile:
         try:
             token = await self._google_app.authorize_access_token(request)
         except GOOGLE_ERRORS as error:
-            raise GoogleLoginFailed from error
+            raise GoogleLoginError("Could not finish the Google login.") from error
         return extract_profile(token.get("userinfo") or {})
 
 

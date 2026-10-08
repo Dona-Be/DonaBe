@@ -1,6 +1,14 @@
 import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { bodySent, mockFetch, mockNetworkFailure, renderApp, UNAUTHORIZED, USER, VISITOR } from "./helpers";
+import {
+  bodySent,
+  mockFetch,
+  mockNetworkFailure,
+  renderApp,
+  UNAUTHORIZED,
+  USER,
+  VISITOR,
+} from "./helpers";
 
 const PENDING_SIGNUP = { email: "maria@exemplo.com", name: "Maria Silva", picture_url: null };
 
@@ -20,7 +28,9 @@ describe("Login", () => {
 
     renderApp("/login?error=login_failed");
 
-    expect((await screen.findByRole("alert")).textContent).toBe("Não foi possível entrar com o Google. Tente novamente.");
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "Não foi possível entrar com o Google. Tente novamente.",
+    );
   });
 
   it("ignores unknown values of the error parameter", async () => {
@@ -38,7 +48,9 @@ describe("Login", () => {
     renderApp("/login");
 
     await screen.findByRole("link", { name: "Entrar com Google" });
-    expect(screen.getByRole("alert").textContent).toBe("Não foi possível falar com o servidor. Verifique sua conexão.");
+    expect(screen.getByRole("alert").textContent).toBe(
+      "Não foi possível falar com o servidor. Verifique sua conexão.",
+    );
   });
 
   it("shows the role choice when there is a pending signup and goes to the dashboard after choosing", async () => {
@@ -59,7 +71,7 @@ describe("Login", () => {
     expect(bodySent(fetchMock, "POST /api/auth/signup")).toEqual({ role: "manager" });
   });
 
-  it("shows the signup failure and lets the visitor try again", async () => {
+  it("shows the signup failure and offers both a retry and a new Google login", async () => {
     mockFetch({
       "GET /api/auth/me": UNAUTHORIZED,
       "GET /api/auth/pending-signup": { body: PENDING_SIGNUP },
@@ -76,6 +88,9 @@ describe("Login", () => {
       "Já existe um usuário cadastrado com o e-mail maria@exemplo.com.",
     );
     expect(screen.getByRole("button", { name: "Sou doador" }).hasAttribute("disabled")).toBe(false);
+    expect(
+      screen.getByRole("link", { name: "Entrar com Google novamente" }).getAttribute("href"),
+    ).toBe("/api/auth/login/google");
   });
 
   it("sends a logged-in user to the dashboard", async () => {

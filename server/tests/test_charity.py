@@ -58,7 +58,26 @@ def test_gives_one_readable_reason_per_criterion() -> None:
 def test_marks_every_failed_criterion() -> None:
     data = registry_data("Baixada", LIMITED_COMPANY, IT_CONSULTING)
 
-    assert all(reason.startswith("NÃO - ") for reason in CharityClassifier().classify(data).reasons)
+    reasons = CharityClassifier().classify(data).reasons
+
+    assert [reason.split(" - ")[0] for reason in reasons] == ["NÃO", "NÃO", "NÃO"]
+
+
+@pytest.mark.parametrize(
+    ("legal_nature", "main_activity"),
+    [
+        ("399-9", "88.00-6-00"),
+        (" 3999", "86.10-1-01"),
+        ("306-9", "94.30-8-00"),
+    ],
+)
+def test_accepts_registry_codes_with_punctuation(legal_nature: str, main_activity: str) -> None:
+    data = registry_data(
+        legal_nature=RegistryCode(legal_nature, "Natureza"),
+        main_activity=RegistryCode(main_activity, "Atividade"),
+    )
+
+    assert CharityClassifier().classify(data).verdict is Verdict.LIKELY_CHARITY
 
 
 @pytest.mark.parametrize(

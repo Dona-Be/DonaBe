@@ -1,10 +1,9 @@
 from collections.abc import Sequence
 
 import sqlalchemy as sa
+from alembic import op
 from geoalchemy2 import Geography
 from sqlalchemy.dialects import postgresql
-
-from alembic import op
 
 revision: str = "fdb360768a1d"
 down_revision: str | None = None

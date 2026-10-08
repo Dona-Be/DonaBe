@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from src.domain.exceptions import UserAlreadyRegistered
+from src.domain.exceptions import UserAlreadyExistsError
 from src.models.user import User
 
 
@@ -32,7 +32,7 @@ class SqlAlchemyUserRepository(UserRepository):
             self._session.rollback()
             if not isinstance(error.orig, UniqueViolation):
                 raise
-            raise UserAlreadyRegistered(user.email) from error
+            raise UserAlreadyExistsError(user.email) from error
 
     def find_by_id(self, user_id: int) -> User | None:
         return self._session.get(User, user_id)

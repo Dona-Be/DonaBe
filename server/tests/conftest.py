@@ -3,13 +3,13 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+from alembic import command
 from alembic.config import Config
 from dotenv import load_dotenv
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, make_url, text
 from sqlalchemy.orm import Session
 
-from alembic import command
 from tests.fakes import FakeGoogleApp, google_token
 
 SERVER_DIR = Path(__file__).resolve().parents[1]
@@ -20,6 +20,11 @@ MISSING_DATABASE_URL_MESSAGE = (
     "TEST_DATABASE_URL is not set. Point it to a separate PostGIS database, for example "
     "TEST_DATABASE_URL=postgresql+psycopg://donabe:donabe@localhost:5432/donabe_test in the "
     ".env file (the database is created automatically), and start PostGIS with make up."
+)
+TEST_DATABASE_SUFFIX = "_test"
+WRONG_TEST_DATABASE_MESSAGE = (
+    "TEST_DATABASE_URL must point to a database whose name ends with _test, because the tests "
+    "drop and empty its tables."
 )
 # The settings are read when src is imported, so the environment is fixed here and src is
 # imported lazily inside the fixtures, after this module ran.
@@ -52,9 +57,11 @@ def create_database_if_missing(url: str) -> None:
 
 
 @pytest.fixture(scope="session")
-def test_database() -> str:
+def database_url_for_tests() -> str:
     if not TEST_DATABASE_URL:
         raise RuntimeError(MISSING_DATABASE_URL_MESSAGE)
+    if not (make_url(TEST_DATABASE_URL).database or "").endswith(TEST_DATABASE_SUFFIX):
+        raise RuntimeError(WRONG_TEST_DATABASE_MESSAGE)
     create_database_if_missing(TEST_DATABASE_URL)
     return TEST_DATABASE_URL
 
@@ -67,17 +74,19 @@ def alembic_config() -> Config:
 
 
 @pytest.fixture(scope="session")
-def migrated_database(test_database: str, alembic_config: Config) -> None:
+def migrated_database(database_url_for_tests: str, alembic_config: Config) -> None:
     command.upgrade(alembic_config, "head")
 
 
 @pytest.fixture
 def clean_database(migrated_database: None) -> Iterator[None]:
     from src.core.database import engine
+    from src.models import Base
 
     yield
+    tables = ", ".join(table.name for table in Base.metadata.sorted_tables)
     with engine.begin() as connection:
-        connection.execute(text("TRUNCATE users RESTART IDENTITY CASCADE"))
+        connection.execute(text(f"TRUNCATE {tables} RESTART IDENTITY CASCADE"))
 
 
 @pytest.fixture

@@ -14,7 +14,7 @@ Hoje o repositório tem o ambiente de desenvolvimento configurado, o banco de da
 ## Primeiros Passos
 
 ### Usuário Final
-Se seu objetivo for apenas usar o DonaBe, acesse o site em `https://<projeto>.vercel.app` (endereço a ser trocado depois do primeiro deploy) e entre com a sua conta Google.
+Se seu objetivo for apenas usar o DonaBe, acesse o site em `https://donabe.vercel.app` e entre com a sua conta Google.
 
 Agora se seu objetivo for o de reportar algum erro ou bug, consulte [docs/ISSUES.MD](docs/ISSUES.MD)
 

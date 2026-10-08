@@ -27,6 +27,6 @@ export function signUp(role: Role): Promise<PublicUser> {
   return post<PublicUser>("/auth/signup", { role });
 }
 
-export function logout(): Promise<void> {
-  return post<void>("/auth/logout");
+export function logout(): Promise<undefined> {
+  return post<undefined>("/auth/logout");
 }

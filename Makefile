@@ -1,4 +1,4 @@
-.PHONY: up down logs migrate makemigration lint format test dev-server dev-web
+.PHONY: up down db logs migrate makemigration lint format test dev-server dev-web
 
 up:
 	docker compose up --build -d
@@ -6,24 +6,25 @@ up:
 down:
 	docker compose down
 
+db:
+	docker compose up -d --wait db
+
 logs:
 	docker compose logs -f
 
 migrate:
-	docker compose exec api alembic upgrade head
+	cd server && alembic upgrade head
 
 makemigration:
-	docker compose run --rm --user "$$(id -u):$$(id -g)" \
-		-v "$(CURDIR)/server/src:/app/src" \
-		-v "$(CURDIR)/server/alembic/versions:/app/alembic/versions" \
-		api alembic revision --autogenerate -m "$(m)"
+	cd server && alembic revision --autogenerate -m "$(m)"
 
 lint:
 	cd server && ruff check . && ruff format --check .
-	cd web && npm run lint
+	cd web && npm run lint && npm run typecheck
 
 format:
-	cd server && ruff format . && ruff check --fix .
+	cd server && ruff check --fix --exit-zero . && ruff format .
+	cd web && npm run format
 
 test:
 	cd server && pytest

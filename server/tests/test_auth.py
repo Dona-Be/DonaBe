@@ -1,4 +1,5 @@
 import httpx2
+import pytest
 from authlib.integrations.starlette_client import OAuthError
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -21,7 +22,7 @@ def create_donor(db_session: Session, email: str = USER_EMAIL) -> Donor:
     return donor
 
 
-def set_cookies(response: httpx2.Response) -> dict[str, str]:
+def cookies_set_by(response: httpx2.Response) -> dict[str, str]:
     return {header.split("=", 1)[0]: header for header in response.headers.get_list("set-cookie")}
 
 
@@ -52,7 +53,7 @@ def test_callback_of_known_user_starts_the_session(client: TestClient, db_sessio
     response = client.get(GOOGLE_CALLBACK, follow_redirects=False)
 
     assert response.headers["location"] == FRONTEND_URL
-    assert "HttpOnly" in set_cookies(response)[ACCESS_TOKEN_COOKIE]
+    assert "HttpOnly" in cookies_set_by(response)[ACCESS_TOKEN_COOKIE]
     assert client.get("/api/auth/me").json() == {
         "id": donor.id,
         "email": USER_EMAIL,
@@ -66,7 +67,7 @@ def test_callback_of_new_user_starts_a_pending_signup(client: TestClient) -> Non
     response = client.get(GOOGLE_CALLBACK, follow_redirects=False)
 
     assert response.headers["location"] == f"{FRONTEND_URL}/login"
-    cookies = set_cookies(response)
+    cookies = cookies_set_by(response)
     assert "HttpOnly" in cookies[PENDING_SIGNUP_COOKIE]
     assert was_deleted(cookies[ACCESS_TOKEN_COOKIE])
     assert client.get("/api/auth/pending-signup").json() == {
@@ -88,15 +89,28 @@ def test_callback_lowercases_the_google_email(
     assert client.post("/api/auth/signup", json={"role": "donor"}).json()["email"] == USER_EMAIL
 
 
-def test_callback_with_google_failure_goes_back_to_login(
-    client: TestClient, fake_google: FakeGoogleApp
+def test_callback_with_google_failure_goes_back_to_login_and_logs_the_cause(
+    client: TestClient, fake_google: FakeGoogleApp, caplog: pytest.LogCaptureFixture
 ) -> None:
     fake_google.error = OAuthError(error="access_denied")
 
     response = client.get(GOOGLE_CALLBACK, follow_redirects=False)
 
     assert response.headers["location"] == LOGIN_FAILED_URL
-    assert set_cookies(response) == {}
+    assert cookies_set_by(response) == {}
+    assert "Google login failed" in caplog.text
+    assert "access_denied" in caplog.text
+
+
+def test_google_failure_log_keeps_the_cause_on_one_line(
+    client: TestClient, fake_google: FakeGoogleApp, caplog: pytest.LogCaptureFixture
+) -> None:
+    fake_google.error = OAuthError(error="access_denied", description="forged\nINFO: fake line")
+
+    client.get(GOOGLE_CALLBACK, follow_redirects=False)
+
+    assert "forged\\nINFO: fake line" in caplog.text
+    assert "\nINFO: fake line" not in caplog.text
 
 
 def test_callback_with_unverified_email_goes_back_to_login(
@@ -116,7 +130,7 @@ def test_signup_creates_the_user_and_starts_the_session(client: TestClient) -> N
 
     assert response.status_code == 201
     assert response.json()["role"] == "manager"
-    cookies = set_cookies(response)
+    cookies = cookies_set_by(response)
     assert "HttpOnly" in cookies[ACCESS_TOKEN_COOKIE]
     assert was_deleted(cookies[PENDING_SIGNUP_COOKIE])
     assert client.get("/api/auth/me").json()["email"] == USER_EMAIL
@@ -170,7 +184,7 @@ def test_logout_clears_the_cookies_and_invalidates_other_devices(
     response = client.post("/api/auth/logout")
 
     assert response.status_code == 204
-    cookies = set_cookies(response)
+    cookies = cookies_set_by(response)
     assert was_deleted(cookies[ACCESS_TOKEN_COOKIE])
     assert was_deleted(cookies[PENDING_SIGNUP_COOKIE])
     assert client.get("/api/auth/me").status_code == 401

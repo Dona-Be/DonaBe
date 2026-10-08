@@ -55,7 +55,7 @@ def read_access_token(token: str) -> TokenSession | None:
     except ValueError:
         return None
     session_version = claims["ver"]
-    if not 1 <= user_id <= MAX_USER_ID or not isinstance(session_version, int):
+    if not 1 <= user_id <= MAX_USER_ID or type(session_version) is not int:
         return None
     return TokenSession(user_id=user_id, session_version=session_version)
 

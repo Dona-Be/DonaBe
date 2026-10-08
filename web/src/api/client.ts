@@ -12,21 +12,23 @@ const INVALID_DATA_MESSAGE = "Alguns dados enviados são inválidos. Revise e te
 const SERVER_FAILURE_MESSAGE = "O servidor não conseguiu concluir a operação. Tente novamente.";
 
 async function errorFrom(response: Response): Promise<FriendlyError> {
-  const body: ErrorBody | null = await response.json().catch(() => null);
+  const body = (await response.json().catch(() => null)) as ErrorBody | null;
   if (typeof body?.detail === "string") return new FriendlyError(body.detail, response.status);
   if (Array.isArray(body?.detail)) return new FriendlyError(INVALID_DATA_MESSAGE, response.status);
   return new FriendlyError(SERVER_FAILURE_MESSAGE, response.status);
 }
 
 async function request<T>(path: string, options: RequestInit): Promise<T> {
-  const response = await fetch(API_PREFIX + path, { ...options, credentials: "include" }).catch(() => {
-    throw new FriendlyError(NO_CONNECTION_MESSAGE);
-  });
+  const response = await fetch(API_PREFIX + path, { ...options, credentials: "include" }).catch(
+    () => {
+      throw new FriendlyError(NO_CONNECTION_MESSAGE);
+    },
+  );
 
   if (!response.ok) throw await errorFrom(response);
   if (response.status === NO_CONTENT) return undefined as T;
 
-  return response.json();
+  return response.json() as Promise<T>;
 }
 
 export function get<T>(path: string): Promise<T> {
