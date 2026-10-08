@@ -1,0 +1,19 @@
+name: Documentação
+description: Erro, informação desatualizada ou falta de clareza na documentação.
+title: "[Documentação] "
+labels: ["Documentação"]
+body:
+  - type: input
+    id: location
+    attributes:
+      label: Onde está
+      description: Arquivo e seção.
+      placeholder: docs/SETUP.MD, seção Configuração
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: O que está errado ou faltando?
+    validations:
+      required: true

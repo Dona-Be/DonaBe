@@ -1,0 +1,25 @@
+name: Interface
+description: Problema visual ou de navegação.
+title: "[Interface] "
+labels: ["Interface"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: O que está errado?
+      description: Elementos desalinhados, textos cortados, cores ou contraste inadequados, fluxo confuso.
+    validations:
+      required: true
+  - type: input
+    id: screen
+    attributes:
+      label: Tela
+      description: Qual página e em que tamanho de tela (celular, notebook...).
+      placeholder: /login no celular
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Captura de tela
+      description: Arraste uma imagem aqui, se tiver.

@@ -1,0 +1,96 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  backend:
+    name: Backend on Render
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: producao
+
+    steps:
+      - name: Trigger the Render deploy hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "::error::The RENDER_DEPLOY_HOOK_URL secret is missing in the production environment. Nothing was deployed."
+            exit 1
+          fi
+          curl --fail --silent --show-error --output /dev/null --request POST "$RENDER_DEPLOY_HOOK_URL"
+
+  frontend:
+    name: Frontend on Vercel
+    needs: backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: producao
+
+    steps:
+      - name: Check that the Vercel secrets exist
+        env:
+          TOKEN_CONFIGURED: ${{ secrets.VERCEL_TOKEN != '' }}
+          ORG_CONFIGURED: ${{ secrets.VERCEL_ORG_ID != '' }}
+          PROJECT_CONFIGURED: ${{ secrets.VERCEL_PROJECT_ID != '' }}
+        run: |
+          missing=""
+          [ "$TOKEN_CONFIGURED" = "true" ] || missing="$missing VERCEL_TOKEN"
+          [ "$ORG_CONFIGURED" = "true" ] || missing="$missing VERCEL_ORG_ID"
+          [ "$PROJECT_CONFIGURED" = "true" ] || missing="$missing VERCEL_PROJECT_ID"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing secrets in the production environment:$missing. The API was deployed; the frontend was not."
+            exit 1
+          fi
+
+      - name: Check out the code (actions/checkout v7.0.1)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node (actions/setup-node v7.0.0)
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            .github/tools/vercel/package-lock.json
+            web/package-lock.json
+
+      - name: Install the pinned Vercel CLI
+        working-directory: .github/tools/vercel
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
+
+      - name: Prepare the project settings for the build, without any token
+        run: |
+          mkdir -p .vercel
+          cp .github/tools/vercel/project.json .vercel/project.json
+
+      - name: Build the frontend
+        run: vercel build --prod
+
+      - name: Deploy the frontend to production
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel deploy --prebuilt --prod --yes

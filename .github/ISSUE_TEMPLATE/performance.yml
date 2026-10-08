@@ -1,0 +1,19 @@
+name: Performance
+description: Lentidão, travamento ou carregamento demorado.
+title: "[Performance] "
+labels: ["Performance"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: O que está lento?
+      description: Qual ação demora, quanto tempo leva e quanto você esperava.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Como reproduzir
+      description: Passo a passo até a lentidão aparecer.
+    validations:
+      required: true

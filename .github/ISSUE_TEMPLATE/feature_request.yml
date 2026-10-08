@@ -1,0 +1,19 @@
+name: Nova funcionalidade
+description: Proposta de algo que ainda não existe no DonaBe.
+title: "[Nova funcionalidade] "
+labels: ["Nova funcionalidade"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Que problema isso resolve?
+      description: Para quem (doador ou gestor de instituição) e por que importa.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: O que você propõe?
+      description: Como a funcionalidade funcionaria, em poucas linhas.
+    validations:
+      required: true

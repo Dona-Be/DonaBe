@@ -1,0 +1,19 @@
+name: Qualidade de Código
+description: Código confuso, complexo demais ou fora das boas práticas, sem mudar o que ele faz.
+title: "[Qualidade de Código] "
+labels: ["Qualidade de Código"]
+body:
+  - type: input
+    id: location
+    attributes:
+      label: Arquivo ou módulo
+      placeholder: server/src/services/users.py
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: O que poderia melhorar?
+      description: O que está confuso ou fora das boas práticas e como você resolveria.
+    validations:
+      required: true
