@@ -1,9 +1,9 @@
 from logging.config import fileConfig
 
+from alembic import context
 from geoalchemy2 import alembic_helpers
 from sqlalchemy import create_engine, pool
 
-from alembic import context
 from src.core.config import settings
 from src.models import Base
 
@@ -17,8 +17,9 @@ GEOSPATIAL_OPTIONS = {
     "render_item": alembic_helpers.render_item,
 }
 
+# The tests run the migrations in their own process, so the application loggers must stay on.
 if context.config.config_file_name is not None:
-    fileConfig(context.config.config_file_name)
+    fileConfig(context.config.config_file_name, disable_existing_loggers=False)
 
 
 def run_migrations_offline() -> None:

@@ -20,7 +20,12 @@ describe("get", () => {
   });
 
   it("replaces a validation detail list with a friendly message", async () => {
-    mockFetch({ "GET /api/resource": { status: 422, body: { detail: [{ loc: ["body", "role"], msg: "invalid" }] } } });
+    mockFetch({
+      "GET /api/resource": {
+        status: 422,
+        body: { detail: [{ loc: ["body", "role"], msg: "invalid" }] },
+      },
+    });
 
     await expect(get("/resource")).rejects.toMatchObject({
       message: "Alguns dados enviados são inválidos. Revise e tente novamente.",

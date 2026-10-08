@@ -135,8 +135,8 @@ sessionVersion++;
 // User may be null when not authenticated yet
 if (user != null) { ... }
 
-// Validate that the date follows the ISO 8601 format
-if (validateISODate(data)) { ... }
+// Google only sends the login back to registered URIs, so the dev server keeps port 5173
+const DEV_SERVER_PORT = 5173;
 ```
 
 > [!TIP]
@@ -158,10 +158,10 @@ test: adicionar testes para o serviço de usuários
 
 #### Executando Testes
 
-Sempre execute as validações antes de criar uma PR. O `make test` precisa do ambiente virtual do backend ativo (`source server/.venv/bin/activate`) e do banco no ar (`make up`), porque os testes do backend rodam contra o banco de testes:
+Sempre execute as validações antes de criar uma PR. O `make test` precisa do ambiente virtual do backend ativo (`source server/.venv/bin/activate`) e do banco no ar (`make up` ou `make db`), porque os testes do backend rodam contra o banco de testes:
 
 ```bash
-# Lint do backend e do site
+# Lint do backend; lint, formatação e tipos do site
 make lint
 
 # Testes do backend (contra o banco de testes) e do site

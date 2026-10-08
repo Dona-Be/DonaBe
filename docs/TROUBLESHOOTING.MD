@@ -68,11 +68,11 @@ O seu usuário ainda não está no grupo `docker` nesta sessão. Depois do `sudo
 
 ### Descrição
 
-Ao rodar `make up` aparece `bind: address already in use`, ou o Vite sobe em outra porta (`5174`).
+Ao rodar `make up` aparece `bind: address already in use`, o `make dev-server` falha com `address already in use`, ou o Vite sobe em outra porta (`5174`).
 
 ### Solução
 
-Já existe algo na porta 5432, 8000 ou 5173. Para o banco e a API, mude `POSTGRES_PORT` ou `BACKEND_PORT` no `.env` (e, fora do Docker, a porta em `DATABASE_URL` e `TEST_DATABASE_URL`). Para o site, feche o outro processo na 5173: o Google só devolve o login para `http://localhost:5173`, então o Vite em outra porta quebra o login.
+Já existe algo na porta 5432, 8000 ou 5173. Se o erro aparecer no `make dev-server`, quem ocupa a 8000 é a API do Docker: suba só o banco com `make db` ou pare a API com `docker compose stop api`. Para o banco e a API, mude `POSTGRES_PORT` ou `BACKEND_PORT` no `.env` (e, fora do Docker, a porta em `DATABASE_URL` e `TEST_DATABASE_URL`). Para o site, feche o outro processo na 5173: o Google só devolve o login para `http://localhost:5173`, então o Vite em outra porta quebra o login.
 
 > [!NOTE]
 > Se mudar `BACKEND_PORT`, ajuste também o alvo do proxy em `web/vite.config.ts`.
@@ -85,7 +85,7 @@ Já existe algo na porta 5432, 8000 ou 5173. Para o banco e a API, mude `POSTGRE
 
 ### Solução
 
-O comando monta `server/src` no container, então a imagem antiga não é o problema. Confira que:
+Confira que:
 
 1. a entidade nova está importada em `server/src/models/__init__.py` (o autogenerate só enxerga o que está lá);
 2. o banco já está com as migrações anteriores aplicadas (`make migrate`);
@@ -105,7 +105,7 @@ Os testes do backend rodam contra um banco separado. Defina no `.env`:
 TEST_DATABASE_URL=postgresql+psycopg://donabe:donabe@localhost:5432/donabe_test
 ```
 
-e suba o banco com `make up`. O banco `donabe_test` é criado sozinho na primeira execução.
+e suba o banco com `make up` ou `make db`. O banco `donabe_test` é criado sozinho na primeira execução. O nome precisa terminar em `_test`, porque os testes apagam as tabelas desse banco.
 
 ## 8. O site em produção demora um minuto para responder
 
@@ -121,7 +121,7 @@ A API gratuita do Render dorme depois de 15 minutos sem acesso e demora cerca de
 
 ### Descrição
 
-Em produção, `https://<projeto>.vercel.app/api/docs` abre uma página em branco ou com erros no console do navegador.
+Em produção, `https://donabe.vercel.app/api/docs` abre uma página em branco ou com erros no console do navegador.
 
 ### Solução
 

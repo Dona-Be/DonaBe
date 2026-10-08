@@ -33,7 +33,12 @@ export function Dashboard() {
       <p className="text-slate-600">Este é o seu painel. As funcionalidades vão aparecer aqui.</p>
       <div className="flex items-center gap-3">
         {user.picture_url && (
-          <img src={user.picture_url} alt="" referrerPolicy="no-referrer" className="h-12 w-12 rounded-full" />
+          <img
+            src={user.picture_url}
+            alt=""
+            referrerPolicy="no-referrer"
+            className="h-12 w-12 rounded-full"
+          />
         )}
         <dl className="text-sm">
           <dt className="text-slate-500">E-mail</dt>
@@ -43,7 +48,7 @@ export function Dashboard() {
         </dl>
       </div>
       <Button disabled={loggingOut} onClick={handleLogout}>
-        Sair
+        Sair de todos os aparelhos
       </Button>
       {errorMessage && <ErrorMessage message={errorMessage} />}
     </section>

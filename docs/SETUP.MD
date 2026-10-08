@@ -1,6 +1,6 @@
 # Configuração do Ambiente de Desenvolvimento
 
-Este projeto usa **Docker Compose** para subir o banco de dados (PostgreSQL com PostGIS) e a API num ambiente isolado, sem instalar nada disso direto na sua máquina.
+Este projeto usa **Docker Compose** para subir o banco de dados (PostgreSQL com PostGIS, a extensão de dados geográficos que permite buscar instituições por proximidade) e a API num ambiente isolado, sem instalar nada disso direto na sua máquina.
 
 O guia de configuração a partir daqui irá assumir que você está usando um Sistema Operacional Linux. No Windows, use o WSL com o Docker Desktop.
 
@@ -12,7 +12,7 @@ O guia de configuração a partir daqui irá assumir que você está usando um S
 - make - (atalhos para os comandos do projeto)
 - Git
 
-As dependências Python do backend são instaladas num ambiente virtual em `server/.venv`, e as do site pelo `npm`.
+No Ubuntu, o `make` e o Git se instalam com `sudo apt install make git`. As dependências Python do backend são instaladas num ambiente virtual em `server/.venv`, e as do site pelo `npm`.
 
 # Instalação de Dependências
 
@@ -28,7 +28,7 @@ Se ainda assim não encontrar ou não conseguir resolver o problema, não hesite
 
 ## 1. Docker
 
-O Docker roda o PostgreSQL com PostGIS e a API em containers, com a mesma imagem usada em produção.
+O Docker roda o PostgreSQL com PostGIS e a API em containers.
 
 ### 1. Instalação
 
@@ -177,16 +177,20 @@ Acesse `http://localhost:5173`. O Vite repassa as chamadas a `/api` para a API, 
 
 ### 4. Migrações do banco
 
-Depois de editar um modelo em `server/src/models/` (entidade nova precisa ser importada em `server/src/models/__init__.py`), gere a migração com a API no ar. O comando gera a migração comparando os modelos com o banco (autogenerate):
+Depois de editar um modelo em `server/src/models/` (entidade nova precisa ser importada em `server/src/models/__init__.py`), gere a migração com o banco no ar e o ambiente virtual ativado. O comando compara os modelos com o banco (autogenerate):
 
 ```bash
-make up
 make makemigration m="descricao da mudanca"
+```
+
+Revise o arquivo gerado em `server/alembic/versions/` e depois aplique a migração no banco de desenvolvimento:
+
+```bash
 make format
 make migrate
 ```
 
-Revise o arquivo gerado em `server/alembic/versions/` antes de aplicar.
+Se a API estiver rodando no Docker, rode `make up` em seguida para ela usar o código novo.
 
 ### 5. Comandos
 
@@ -194,6 +198,7 @@ Subir e derrubar o ambiente:
 
 ```bash
 make up    # constrói a API e sobe banco + API em segundo plano
+make db    # sobe só o banco, para rodar a API fora do Docker
 make down  # derruba banco e API
 make logs  # acompanha os logs dos containers
 ```
@@ -201,22 +206,22 @@ make logs  # acompanha os logs dos containers
 Banco de dados:
 
 ```bash
-make migrate                               # aplica as migrações no container da API
+make migrate                                 # aplica as migrações no banco de desenvolvimento
 make makemigration m="descricao da mudanca"  # gera a migração comparando os modelos com o banco (autogenerate)
 ```
 
 Lint e testes:
 
 ```bash
-make lint    # ruff no backend e eslint no site
-make format  # corrige formatação e imports do backend
+make lint    # ruff no backend; eslint, prettier e tipos no site
+make format  # formata o backend e o site
 make test    # pytest no backend (contra o banco de testes) e vitest no site
 ```
 
 Desenvolvimento com reload automático:
 
 ```bash
-make dev-server  # API fora do Docker (precisa do banco no ar)
+make dev-server  # API fora do Docker, depois de make db e make migrate
 make dev-web     # site em http://localhost:5173
 ```
 
@@ -225,16 +230,18 @@ make dev-web     # site em http://localhost:5173
 Depois do setup, com o ambiente virtual ativado, use os comandos abaixo:
 
 ```bash
-# Banco + API no Docker e site com reload automática
+# Banco + API no Docker e site com reload automático
 make up
 make dev-web
 
-# Ou a API fora do Docker, com reload automática (precisa do banco no ar)
-make up
+# Ou só o banco no Docker e a API com reload automático, cada servidor em um terminal
+make db
+make migrate
 make dev-server
 make dev-web
 
 # Antes de abrir um pull request
+make format
 make lint
 make test
 ```

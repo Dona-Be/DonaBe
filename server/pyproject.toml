@@ -3,7 +3,31 @@ line-length = 100
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B"]
+select = [
+  "E", "F", "I", "UP", "B",
+  "N", "A", "ANN", "SIM", "RET", "C90", "PIE", "C4", "PT", "TID",
+  "ERA", "T20", "PTH", "PL", "RUF", "FAST", "FBT",
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 8
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.isort]
+# Without this, ruff takes the server/alembic folder for the alembic package and splits its imports.
+known-third-party = ["alembic"]
+
+[tool.ruff.lint.per-file-ignores]
+# PLR2004: status codes read better as literals in asserts. FBT001: pytest passes parameters
+# positionally. ANN401: claim overrides accept any value. SIM300: settings fields are UPPER_CASE,
+# which this rule mistakes for constants.
+"tests/**" = ["PLR2004", "FBT001", "ANN401", "SIM300"]
+# The settings are read when src is imported, so conftest imports src inside the fixtures.
+"tests/conftest.py" = ["PLC0415"]
+# __mapper_args__ is a class-level dict by SQLAlchemy design.
+"src/models/**" = ["RUF012"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

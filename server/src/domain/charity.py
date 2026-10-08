@@ -1,3 +1,4 @@
+import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import ClassVar
@@ -11,6 +12,12 @@ NONPROFIT_LEGAL_NATURES = frozenset({"3069", "3999"})
 
 # CNAE prefixes: 8610/8690 health care, 87-88 social assistance, 9430 social rights advocacy.
 CHARITY_CNAE_PREFIXES = ("8610", "8690", "87", "88", "9430")
+
+NON_DIGITS = re.compile(r"\D")
+
+
+def digits_only(code: str) -> str:
+    return NON_DIGITS.sub("", code)
 
 
 @dataclass(frozen=True)
@@ -68,7 +75,7 @@ class NonprofitLegalNatureCriterion(Criterion):
     description = "Natureza jurídica"
 
     def is_met(self, data: RegistryData) -> bool:
-        return data.legal_nature.code in NONPROFIT_LEGAL_NATURES
+        return digits_only(data.legal_nature.code) in NONPROFIT_LEGAL_NATURES
 
     def observed_value(self, data: RegistryData) -> str:
         return str(data.legal_nature)
@@ -78,7 +85,7 @@ class CharityActivityCriterion(Criterion):
     description = "Atividade principal"
 
     def is_met(self, data: RegistryData) -> bool:
-        return data.main_activity.code.startswith(CHARITY_CNAE_PREFIXES)
+        return digits_only(data.main_activity.code).startswith(CHARITY_CNAE_PREFIXES)
 
     def observed_value(self, data: RegistryData) -> str:
         return str(data.main_activity)
@@ -90,7 +97,7 @@ class Classification:
     reasons: tuple[str, ...]
 
 
-def decide_verdict(active: bool, nonprofit: bool, charity_activity: bool) -> Verdict:
+def decide_verdict(*, active: bool, nonprofit: bool, charity_activity: bool) -> Verdict:
     if not active:
         return Verdict.INACTIVE
     if nonprofit and charity_activity:
@@ -110,5 +117,7 @@ class CharityClassifier:
         active = self._active.evaluate(data)
         nonprofit = self._nonprofit.evaluate(data)
         charity_activity = self._charity_activity.evaluate(data)
-        verdict = decide_verdict(active.met, nonprofit.met, charity_activity.met)
+        verdict = decide_verdict(
+            active=active.met, nonprofit=nonprofit.met, charity_activity=charity_activity.met
+        )
         return Classification(verdict, (active.reason, nonprofit.reason, charity_activity.reason))

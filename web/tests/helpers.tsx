@@ -19,9 +19,15 @@ export const USER: PublicUser = {
   role: "donor",
 };
 
-export const UNAUTHORIZED: FakeResponse = { status: 401, body: { detail: "Você precisa entrar para continuar." } };
+export const UNAUTHORIZED: FakeResponse = {
+  status: 401,
+  body: { detail: "Você precisa entrar para continuar." },
+};
 
-export const VISITOR = { "GET /api/auth/me": UNAUTHORIZED, "GET /api/auth/pending-signup": UNAUTHORIZED };
+export const VISITOR = {
+  "GET /api/auth/me": UNAUTHORIZED,
+  "GET /api/auth/pending-signup": UNAUTHORIZED,
+};
 
 function requestKey(input: RequestInfo | URL, options?: RequestInit): string {
   const url = input instanceof Request ? input.url : input.toString();
@@ -30,15 +36,20 @@ function requestKey(input: RequestInfo | URL, options?: RequestInit): string {
 
 function toResponse({ status = 200, body }: FakeResponse): Response {
   if (body === undefined) return new Response(null, { status });
-  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
-export function mockFetch(responses: Record<string, FakeResponse>) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, options?: RequestInit): Promise<Response> => {
-    const response = responses[requestKey(input, options)];
-    if (!response) throw new Error(`Unexpected request: ${requestKey(input, options)}`);
-    return toResponse(response);
-  });
+export function mockFetch(responses: Partial<Record<string, FakeResponse>>) {
+  const fetchMock = vi.fn(
+    async (input: RequestInfo | URL, options?: RequestInit): Promise<Response> => {
+      const response = responses[requestKey(input, options)];
+      if (!response) throw new Error(`Unexpected request: ${requestKey(input, options)}`);
+      return toResponse(response);
+    },
+  );
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
 }

@@ -1,6 +1,5 @@
-from alembic.config import Config
-
 from alembic import command
+from alembic.config import Config
 
 
 def test_migration_matches_the_models(alembic_config: Config, migrated_database: None) -> None:

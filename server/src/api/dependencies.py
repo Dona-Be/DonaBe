@@ -46,10 +46,10 @@ def unauthorized(message: str) -> HTTPException:
 def get_current_user_if_any(
     service: UserServiceDep, token: AccessTokenCookie = None
 ) -> User | None:
-    session = None if token is None else read_access_token(token)
-    if session is None:
+    token_session = None if token is None else read_access_token(token)
+    if token_session is None:
         return None
-    return service.identify_session(session.user_id, session.session_version)
+    return service.identify_session(token_session.user_id, token_session.session_version)
 
 
 CurrentUserIfAny = Annotated[User | None, Depends(get_current_user_if_any)]
