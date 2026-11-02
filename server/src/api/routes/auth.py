@@ -2,14 +2,9 @@ from fastapi import APIRouter, Request, Response, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import RedirectResponse
 
+from src.api.authentication import CurrentUser, CurrentUserIfAny, PendingSignupProfile
 from src.api.cookies import clear_session_cookies, start_pending_signup, start_session
-from src.api.dependencies import (
-    CurrentUser,
-    CurrentUserIfAny,
-    GoogleClientDep,
-    PendingSignupProfile,
-    UserServiceDep,
-)
+from src.api.dependencies import GoogleClientDep, UserServiceDep
 from src.api.frontend_paths import LOGIN_PATH
 from src.core.config import settings
 from src.domain.user_profile import UserProfile

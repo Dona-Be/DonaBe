@@ -1,16 +1,19 @@
 from collections.abc import Generator
 from typing import Annotated
 
-from fastapi import Cookie, Depends, HTTPException, status
+import httpx2
+from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from src.api.cookies import ACCESS_TOKEN_COOKIE, PENDING_SIGNUP_COOKIE
 from src.auth.google import GoogleClient, google_client
-from src.auth.tokens import read_access_token, read_pending_signup_token
+from src.connectors.addresses import AddressLookup, BrasilApiAddressLookup
+from src.connectors.companies import CnpjaCompanyLookup, CompanyLookup
+from src.connectors.json_api import http_client
+from src.connectors.routing import OsrmRoutePlanner, RoutePlanner
 from src.core.database import engine
-from src.domain.user_profile import UserProfile
-from src.models.user import User
 from src.repositories.users import SqlAlchemyUserRepository, UserRepository
+from src.services.cnpj import CnpjService
+from src.services.locations import LocationService
 from src.services.users import UserService
 
 
@@ -23,6 +26,16 @@ def get_google_client() -> GoogleClient:
     return google_client
 
 
+GoogleClientDep = Annotated[GoogleClient, Depends(get_google_client)]
+
+
+def get_http_client() -> httpx2.Client:
+    return http_client
+
+
+HttpClientDep = Annotated[httpx2.Client, Depends(get_http_client)]
+
+
 def get_user_repository(session: Annotated[Session, Depends(get_db_session)]) -> UserRepository:
     return SqlAlchemyUserRepository(session)
 
@@ -33,42 +46,35 @@ def get_user_service(
     return UserService(repository)
 
 
-GoogleClientDep = Annotated[GoogleClient, Depends(get_google_client)]
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
-AccessTokenCookie = Annotated[str | None, Cookie(alias=ACCESS_TOKEN_COOKIE)]
-PendingSignupCookie = Annotated[str | None, Cookie(alias=PENDING_SIGNUP_COOKIE)]
 
 
-def unauthorized(message: str) -> HTTPException:
-    return HTTPException(status.HTTP_401_UNAUTHORIZED, message)
+def get_company_lookup(client: HttpClientDep) -> CompanyLookup:
+    return CnpjaCompanyLookup(client)
 
 
-def get_current_user_if_any(
-    service: UserServiceDep, token: AccessTokenCookie = None
-) -> User | None:
-    token_session = None if token is None else read_access_token(token)
-    if token_session is None:
-        return None
-    return service.identify_session(token_session.user_id, token_session.session_version)
+def get_address_lookup(client: HttpClientDep) -> AddressLookup:
+    return BrasilApiAddressLookup(client)
 
 
-CurrentUserIfAny = Annotated[User | None, Depends(get_current_user_if_any)]
+def get_route_planner(client: HttpClientDep) -> RoutePlanner:
+    return OsrmRoutePlanner(client)
 
 
-def get_current_user(user: CurrentUserIfAny) -> User:
-    if user is None:
-        raise unauthorized("Você precisa entrar para continuar.")
-    return user
+def get_cnpj_service(
+    companies: Annotated[CompanyLookup, Depends(get_company_lookup)],
+) -> CnpjService:
+    return CnpjService(companies)
 
 
-CurrentUser = Annotated[User, Depends(get_current_user)]
+CnpjServiceDep = Annotated[CnpjService, Depends(get_cnpj_service)]
 
 
-def get_pending_signup_profile(token: PendingSignupCookie = None) -> UserProfile:
-    profile = None if token is None else read_pending_signup_token(token)
-    if profile is None:
-        raise unauthorized("Nenhum cadastro pendente. Entre com o Google novamente.")
-    return profile
+def get_location_service(
+    addresses: Annotated[AddressLookup, Depends(get_address_lookup)],
+    routes: Annotated[RoutePlanner, Depends(get_route_planner)],
+) -> LocationService:
+    return LocationService(addresses, routes)
 
 
-PendingSignupProfile = Annotated[UserProfile, Depends(get_pending_signup_profile)]
+LocationServiceDep = Annotated[LocationService, Depends(get_location_service)]
