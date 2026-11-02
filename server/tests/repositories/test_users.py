@@ -14,8 +14,9 @@ def test_saving_a_second_user_with_the_same_email_is_a_registration_conflict(
     repository = SqlAlchemyUserRepository(db_session)
     profile = UserProfile(email=USER_EMAIL, name=USER_NAME, picture_url=None)
     repository.save(Donor.from_profile(profile))
+    manager = Manager.from_profile(profile)
 
     with pytest.raises(UserAlreadyExistsError, match=USER_EMAIL):
-        repository.save(Manager.from_profile(profile))
+        repository.save(manager)
 
     assert isinstance(repository.find_by_email(USER_EMAIL), Donor)

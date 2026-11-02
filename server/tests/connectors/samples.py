@@ -1,5 +1,7 @@
 from typing import Any
 
+from src.connectors.schemas import Coordinates
+
 # Real BrasilAPI answer on 2026-11-02.
 PAULISTA: dict[str, Any] = {
     "cep": "01310200",
@@ -27,9 +29,10 @@ ACRELANDIA: dict[str, Any] = {
 CEP_INVALID: dict[str, Any] = {"name": "CepPromiseError", "type": "validation_error"}
 CEP_NOT_FOUND: dict[str, Any] = {"name": "CepPromiseError", "type": "service_error"}
 
+AACD_TAX_ID = "60979457000111"
 # Real CNPJá answer (2026-11-02), cut to the fields read plus personal data.
 AACD: dict[str, Any] = {
-    "taxId": "60979457000111",
+    "taxId": AACD_TAX_ID,
     "alias": "Aacd Ibirapuera",
     "company": {
         "name": "ASSOCIACAO DE ASSISTENCIA A CRIANCA DEFICIENTE",
@@ -58,4 +61,6 @@ CNPJ_NOT_FOUND: dict[str, Any] = {
 CNPJ_RATE_LIMITED: dict[str, Any] = {"code": 429, "message": "rate limit exceeded"}
 
 # Real OSRM answer between Praça da Sé and Avenida do Estado (2026-11-02).
+PRACA_DA_SE = Coordinates(latitude=-23.550520, longitude=-46.633309)
+AV_DO_ESTADO = Coordinates(latitude=-23.533773, longitude=-46.625290)
 ROUTE_OK: dict[str, Any] = {"code": "Ok", "routes": [{"distance": 3570.3, "duration": 395.2}]}

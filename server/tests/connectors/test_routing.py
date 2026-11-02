@@ -8,10 +8,8 @@ from src.connectors.routing import OsrmRoutePlanner
 from src.connectors.schemas import Coordinates, Route
 from src.domain.exceptions import RouteNotFoundError
 from tests.connectors.fakes import FakeApi
-from tests.connectors.samples import ROUTE_OK
+from tests.connectors.samples import AV_DO_ESTADO, PRACA_DA_SE, ROUTE_OK
 
-PRACA_DA_SE = Coordinates(latitude=-23.550520, longitude=-46.633309)
-AV_DO_ESTADO = Coordinates(latitude=-23.533773, longitude=-46.625290)
 # Python reads 1e999 as infinity.
 INFINITE_DISTANCE = b'{"code": "Ok", "routes": [{"distance": 1e999, "duration": 1}]}'
 INFINITE_DURATION = b'{"code": "Ok", "routes": [{"distance": 1, "duration": 1e999}]}'
