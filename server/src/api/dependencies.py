@@ -1,16 +1,23 @@
 from collections.abc import Generator
 from typing import Annotated
 
+import httpx2
 from fastapi import Cookie, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from src.api.cookies import ACCESS_TOKEN_COOKIE, PENDING_SIGNUP_COOKIE
 from src.auth.google import GoogleClient, google_client
 from src.auth.tokens import read_access_token, read_pending_signup_token
+from src.connectors.addresses import AddressLookup, BrasilApiAddressLookup
+from src.connectors.companies import CnpjaCompanyLookup, CompanyLookup
+from src.connectors.json_api import http_client
+from src.connectors.routing import OsrmRoutePlanner, RoutePlanner
 from src.core.database import engine
 from src.domain.user_profile import UserProfile
 from src.models.user import User
 from src.repositories.users import SqlAlchemyUserRepository, UserRepository
+from src.services.cnpj import CnpjService
+from src.services.locations import LocationService
 from src.services.users import UserService
 
 
@@ -23,6 +30,10 @@ def get_google_client() -> GoogleClient:
     return google_client
 
 
+def get_http_client() -> httpx2.Client:
+    return http_client
+
+
 def get_user_repository(session: Annotated[Session, Depends(get_db_session)]) -> UserRepository:
     return SqlAlchemyUserRepository(session)
 
@@ -33,8 +44,38 @@ def get_user_service(
     return UserService(repository)
 
 
+HttpClientDep = Annotated[httpx2.Client, Depends(get_http_client)]
+
+
+def get_company_lookup(client: HttpClientDep) -> CompanyLookup:
+    return CnpjaCompanyLookup(client)
+
+
+def get_address_lookup(client: HttpClientDep) -> AddressLookup:
+    return BrasilApiAddressLookup(client)
+
+
+def get_route_planner(client: HttpClientDep) -> RoutePlanner:
+    return OsrmRoutePlanner(client)
+
+
+def get_cnpj_service(
+    companies: Annotated[CompanyLookup, Depends(get_company_lookup)],
+) -> CnpjService:
+    return CnpjService(companies)
+
+
+def get_location_service(
+    addresses: Annotated[AddressLookup, Depends(get_address_lookup)],
+    routes: Annotated[RoutePlanner, Depends(get_route_planner)],
+) -> LocationService:
+    return LocationService(addresses, routes)
+
+
 GoogleClientDep = Annotated[GoogleClient, Depends(get_google_client)]
 UserServiceDep = Annotated[UserService, Depends(get_user_service)]
+CnpjServiceDep = Annotated[CnpjService, Depends(get_cnpj_service)]
+LocationServiceDep = Annotated[LocationService, Depends(get_location_service)]
 AccessTokenCookie = Annotated[str | None, Cookie(alias=ACCESS_TOKEN_COOKIE)]
 PendingSignupCookie = Annotated[str | None, Cookie(alias=PENDING_SIGNUP_COOKIE)]
 
