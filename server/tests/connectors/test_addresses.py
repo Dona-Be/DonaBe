@@ -2,11 +2,12 @@ import httpx2
 import pytest
 from pydantic import ValidationError
 
+from src.connectors.addresses import BrasilApiAddressLookup
 from src.connectors.exceptions import ExternalServiceError, RateLimitedError
 from src.connectors.json_api import DEFAULT_TIMEOUT
 from src.connectors.schemas import Address, Coordinates
 from src.domain.exceptions import CepNotFoundError, InvalidCepError
-from tests.connectors.helpers import address_lookup_with
+from tests.connectors.fakes import FakeApi
 from tests.connectors.samples import ACRELANDIA, CEP_INVALID, CEP_NOT_FOUND, PAULISTA
 from tests.helpers import fullwidth
 
@@ -20,29 +21,33 @@ PAULISTA_ADDRESS = Address(
 )
 
 
-def test_get_address_calls_the_default_url_and_returns_the_address() -> None:
-    lookup, api = address_lookup_with(httpx2.Response(200, json=PAULISTA))
+def test_get_address_calls_the_default_url_and_returns_the_address(
+    fake_api: FakeApi, address_lookup: BrasilApiAddressLookup
+) -> None:
+    fake_api.response = httpx2.Response(200, json=PAULISTA)
 
-    address = lookup.get_address("01310200")
+    address = address_lookup.get_address("01310200")
 
     assert address == PAULISTA_ADDRESS
-    assert str(api.requests[0].url) == "https://brasilapi.com.br/api/cep/v2/01310200"
-    assert api.requests[0].extensions["timeout"] == httpx2.Timeout(DEFAULT_TIMEOUT).as_dict()
+    assert str(fake_api.requests[0].url) == "https://brasilapi.com.br/api/cep/v2/01310200"
+    assert fake_api.requests[0].extensions["timeout"] == httpx2.Timeout(DEFAULT_TIMEOUT).as_dict()
 
 
-def test_get_address_calls_the_configured_url() -> None:
-    response = httpx2.Response(200, json=PAULISTA)
-    lookup, api = address_lookup_with(response, base_url="https://cep.interno")
+def test_get_address_calls_the_configured_url(fake_api: FakeApi) -> None:
+    fake_api.response = httpx2.Response(200, json=PAULISTA)
+    lookup = BrasilApiAddressLookup(fake_api.client(), base_url="https://cep.interno")
 
     lookup.get_address("01310200")
 
-    assert str(api.requests[0].url) == "https://cep.interno/cep/v2/01310200"
+    assert str(fake_api.requests[0].url) == "https://cep.interno/cep/v2/01310200"
 
 
-def test_get_address_accepts_a_cep_without_street() -> None:
-    lookup, _ = address_lookup_with(httpx2.Response(200, json=ACRELANDIA))
+def test_get_address_accepts_a_cep_without_street(
+    fake_api: FakeApi, address_lookup: BrasilApiAddressLookup
+) -> None:
+    fake_api.response = httpx2.Response(200, json=ACRELANDIA)
 
-    address = lookup.get_address("69945000")
+    address = address_lookup.get_address("69945000")
 
     assert (address.street, address.neighborhood) == (None, None)
     assert address.coordinates == Coordinates(latitude=-10.07387, longitude=-67.055)
@@ -53,13 +58,13 @@ def test_get_address_accepts_a_cep_without_street() -> None:
     ["", "01310-200", " 01310200 ", "1310200", "0131020a", "013102000", fullwidth("01310200")],
     ids=["empty", "dash", "spaces", "seven digits", "letter", "nine digits", "non ascii digits"],
 )
-def test_get_address_only_accepts_the_eight_digits_the_service_normalized(cep: str) -> None:
-    lookup, api = address_lookup_with(httpx2.Response(200, json=PAULISTA))
-
+def test_get_address_only_accepts_the_eight_digits_the_service_normalized(
+    cep: str, fake_api: FakeApi, address_lookup: BrasilApiAddressLookup
+) -> None:
     with pytest.raises(InvalidCepError):
-        lookup.get_address(cep)
+        address_lookup.get_address(cep)
 
-    assert api.requests == []
+    assert fake_api.requests == []
 
 
 @pytest.mark.parametrize(
@@ -95,26 +100,33 @@ def test_get_address_only_accepts_the_eight_digits_the_service_normalized(cep: s
     ],
 )
 def test_get_address_maps_failures(
-    response: httpx2.Response | Exception, error: type[Exception]
+    response: httpx2.Response | Exception,
+    error: type[Exception],
+    fake_api: FakeApi,
+    address_lookup: BrasilApiAddressLookup,
 ) -> None:
-    lookup, _ = address_lookup_with(response)
+    fake_api.response = response
 
     with pytest.raises(error):
-        lookup.get_address("01310200")
+        address_lookup.get_address("01310200")
 
 
-def test_get_address_names_the_cep_that_was_not_found() -> None:
-    lookup, _ = address_lookup_with(httpx2.Response(404, json=CEP_NOT_FOUND))
+def test_get_address_names_the_cep_that_was_not_found(
+    fake_api: FakeApi, address_lookup: BrasilApiAddressLookup
+) -> None:
+    fake_api.response = httpx2.Response(404, json=CEP_NOT_FOUND)
 
     with pytest.raises(CepNotFoundError, match="01310200"):
-        lookup.get_address("01310200")
+        address_lookup.get_address("01310200")
 
 
-def test_get_address_keeps_the_validation_error_as_the_cause() -> None:
-    lookup, _ = address_lookup_with(httpx2.Response(200, json={**PAULISTA, "state": None}))
+def test_get_address_keeps_the_validation_error_as_the_cause(
+    fake_api: FakeApi, address_lookup: BrasilApiAddressLookup
+) -> None:
+    fake_api.response = httpx2.Response(200, json={**PAULISTA, "state": None})
 
     with pytest.raises(ExternalServiceError) as caught:
-        lookup.get_address("01310200")
+        address_lookup.get_address("01310200")
 
     assert caught.value.log_message == "BrasilAPI sent an unexpected body"
     assert isinstance(caught.value.__cause__, ValidationError)

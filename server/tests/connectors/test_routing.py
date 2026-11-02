@@ -13,59 +13,58 @@ from tests.connectors.samples import AV_DO_ESTADO, PRACA_DA_SE, ROUTE_OK
 # Python reads 1e999 as infinity.
 INFINITE_DISTANCE = b'{"code": "Ok", "routes": [{"distance": 1e999, "duration": 1}]}'
 INFINITE_DURATION = b'{"code": "Ok", "routes": [{"distance": 1, "duration": 1e999}]}'
+BOOLEAN_DISTANCE = {"code": "Ok", "routes": [{"distance": True, "duration": 1}]}
 
 
-def planner_with(
-    response: httpx2.Response | Exception, **options: str
-) -> tuple[OsrmRoutePlanner, FakeApi]:
-    api = FakeApi(response)
-    return OsrmRoutePlanner(api.client(), **options), api
+def test_get_route_calls_the_default_url_and_returns_the_route(
+    fake_api: FakeApi, route_planner: OsrmRoutePlanner
+) -> None:
+    fake_api.response = httpx2.Response(200, json=ROUTE_OK)
 
-
-def test_get_route_calls_the_default_url_and_returns_the_route() -> None:
-    planner, api = planner_with(httpx2.Response(200, json=ROUTE_OK))
-
-    route = planner.get_route(PRACA_DA_SE, AV_DO_ESTADO)
+    route = route_planner.get_route(PRACA_DA_SE, AV_DO_ESTADO)
 
     assert route == Route(distance_meters=3570.3, duration_seconds=395.2)
-    assert str(api.requests[0].url) == (
+    assert str(fake_api.requests[0].url) == (
         "https://router.project-osrm.org/route/v1/driving/"
         "-46.633309,-23.550520;-46.625290,-23.533773?overview=false"
     )
-    assert api.requests[0].extensions["timeout"] == httpx2.Timeout(DEFAULT_TIMEOUT).as_dict()
+    assert fake_api.requests[0].extensions["timeout"] == httpx2.Timeout(DEFAULT_TIMEOUT).as_dict()
 
 
-def test_get_route_calls_the_configured_url() -> None:
-    planner, api = planner_with(
-        httpx2.Response(200, json=ROUTE_OK), base_url="https://osrm.interno"
-    )
+def test_get_route_calls_the_configured_url(fake_api: FakeApi) -> None:
+    fake_api.response = httpx2.Response(200, json=ROUTE_OK)
+    planner = OsrmRoutePlanner(fake_api.client(), base_url="https://osrm.interno")
 
     planner.get_route(PRACA_DA_SE, AV_DO_ESTADO)
 
-    assert str(api.requests[0].url).startswith("https://osrm.interno/route/v1/driving/")
+    assert str(fake_api.requests[0].url).startswith("https://osrm.interno/route/v1/driving/")
 
 
-def test_get_route_writes_small_coordinates_without_an_exponent() -> None:
-    planner, api = planner_with(httpx2.Response(200, json=ROUTE_OK))
+def test_get_route_writes_small_coordinates_without_an_exponent(
+    fake_api: FakeApi, route_planner: OsrmRoutePlanner
+) -> None:
+    fake_api.response = httpx2.Response(200, json=ROUTE_OK)
 
-    planner.get_route(Coordinates(latitude=0.00001, longitude=-50.0), AV_DO_ESTADO)
+    route_planner.get_route(Coordinates(latitude=0.00001, longitude=-50.0), AV_DO_ESTADO)
 
-    assert api.requests[0].url.path.startswith("/route/v1/driving/-50.000000,0.000010;")
+    assert fake_api.requests[0].url.path.startswith("/route/v1/driving/-50.000000,0.000010;")
 
 
 @pytest.mark.parametrize("code", ["NoRoute", "NoSegment"])
-def test_get_route_reports_when_there_is_no_route(code: str) -> None:
-    planner, _ = planner_with(httpx2.Response(400, json={"code": code, "message": "no route"}))
+def test_get_route_reports_when_there_is_no_route(
+    code: str, fake_api: FakeApi, route_planner: OsrmRoutePlanner
+) -> None:
+    fake_api.response = httpx2.Response(400, json={"code": code, "message": "no route"})
 
     with pytest.raises(RouteNotFoundError):
-        planner.get_route(PRACA_DA_SE, AV_DO_ESTADO)
+        route_planner.get_route(PRACA_DA_SE, AV_DO_ESTADO)
 
 
-def test_get_route_reports_a_rate_limit() -> None:
-    planner, _ = planner_with(httpx2.Response(429, text="Too Many Requests"))
+def test_get_route_reports_a_rate_limit(fake_api: FakeApi, route_planner: OsrmRoutePlanner) -> None:
+    fake_api.response = httpx2.Response(429, text="Too Many Requests")
 
     with pytest.raises(RateLimitedError):
-        planner.get_route(PRACA_DA_SE, AV_DO_ESTADO)
+        route_planner.get_route(PRACA_DA_SE, AV_DO_ESTADO)
 
 
 @pytest.mark.parametrize(
@@ -92,9 +91,7 @@ def test_get_route_reports_a_rate_limit() -> None:
             "OSRM sent an unexpected body",
         ),
         (
-            httpx2.Response(
-                200, json={"code": "Ok", "routes": [{"distance": True, "duration": 1}]}
-            ),
+            httpx2.Response(200, json=BOOLEAN_DISTANCE),
             "OSRM sent an unexpected body",
         ),
         (httpx2.Response(200, content=INFINITE_DISTANCE), "OSRM sent an unexpected body"),
@@ -119,20 +116,27 @@ def test_get_route_reports_a_rate_limit() -> None:
         "network",
     ],
 )
-def test_get_route_maps_failures(response: httpx2.Response | Exception, log_message: str) -> None:
-    planner, _ = planner_with(response)
+def test_get_route_maps_failures(
+    response: httpx2.Response | Exception,
+    log_message: str,
+    fake_api: FakeApi,
+    route_planner: OsrmRoutePlanner,
+) -> None:
+    fake_api.response = response
 
     with pytest.raises(ExternalServiceError) as caught:
-        planner.get_route(PRACA_DA_SE, AV_DO_ESTADO)
+        route_planner.get_route(PRACA_DA_SE, AV_DO_ESTADO)
 
     assert caught.value.log_message == log_message
 
 
-def test_get_route_keeps_the_validation_error_as_the_cause() -> None:
+def test_get_route_keeps_the_validation_error_as_the_cause(
+    fake_api: FakeApi, route_planner: OsrmRoutePlanner
+) -> None:
     body = {"code": "Ok", "routes": [{"distance": None, "duration": 1}]}
-    planner, _ = planner_with(httpx2.Response(200, json=body))
+    fake_api.response = httpx2.Response(200, json=body)
 
     with pytest.raises(ExternalServiceError) as caught:
-        planner.get_route(PRACA_DA_SE, AV_DO_ESTADO)
+        route_planner.get_route(PRACA_DA_SE, AV_DO_ESTADO)
 
     assert isinstance(caught.value.__cause__, ValidationError)

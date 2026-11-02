@@ -2,8 +2,8 @@ import httpx2
 import pytest
 from authlib.integrations.starlette_client import OAuthError
 from fastapi.testclient import TestClient
-from sqlalchemy.orm import Session
 
+from src.models.user import Donor
 from tests.api.helpers import (
     ACCESS_TOKEN_COOKIE,
     GOOGLE_CALLBACK,
@@ -12,7 +12,6 @@ from tests.api.helpers import (
     PENDING_SIGNUP_COOKIE,
     SITE_URL,
     cookies_set_by,
-    create_donor,
     was_deleted,
 )
 from tests.fakes import USER_EMAIL, USER_NAME, USER_PICTURE, FakeGoogleApp, google_token
@@ -35,9 +34,7 @@ def test_login_that_cannot_reach_google_goes_back_to_login(
     assert response.headers["location"] == LOGIN_FAILED_URL
 
 
-def test_callback_of_known_user_starts_the_session(client: TestClient, db_session: Session) -> None:
-    donor = create_donor(db_session)
-
+def test_callback_of_known_user_starts_the_session(client: TestClient, donor: Donor) -> None:
     response = client.get(GOOGLE_CALLBACK, follow_redirects=False)
 
     assert response.headers["location"] == SITE_URL

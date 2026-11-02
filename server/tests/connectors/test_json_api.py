@@ -1,5 +1,4 @@
 import gzip
-import time
 from collections.abc import Iterator
 
 import httpx2
@@ -14,41 +13,42 @@ SERVICE = "Exemplo"
 GZIP_HEADERS = {"Content-Encoding": "gzip"}
 
 
-def test_get_bytes_returns_the_status_and_the_body() -> None:
-    api = FakeApi(httpx2.Response(200, content=b'{"ok": true}'))
+def test_get_bytes_returns_the_status_and_the_body(fake_api: FakeApi) -> None:
+    fake_api.response = httpx2.Response(200, content=b'{"ok": true}')
 
-    assert get_bytes(api.client(), URL, SERVICE) == (200, b'{"ok": true}')
-
-
-def test_get_bytes_sets_the_default_timeout_on_the_request() -> None:
-    api = FakeApi(httpx2.Response(200, content=b"{}"))
-
-    get_bytes(api.client(), URL, SERVICE)
-
-    assert api.requests[0].extensions["timeout"] == httpx2.Timeout(DEFAULT_TIMEOUT).as_dict()
+    assert get_bytes(fake_api.client(), URL, SERVICE) == (200, b'{"ok": true}')
 
 
-def test_get_bytes_joins_the_chunks_of_the_body() -> None:
-    api = FakeApi(httpx2.Response(200, content=iter([b'{"a"', b": 1}"])))
+def test_get_bytes_sets_the_default_timeout_on_the_request(fake_api: FakeApi) -> None:
+    get_bytes(fake_api.client(), URL, SERVICE)
 
-    assert get_bytes(api.client(), URL, SERVICE) == (200, b'{"a": 1}')
+    assert fake_api.requests[0].extensions["timeout"] == httpx2.Timeout(DEFAULT_TIMEOUT).as_dict()
 
 
-def test_get_bytes_returns_a_redirect_without_following_it() -> None:
-    redirect = httpx2.Response(302, content=b"{}", headers={"Location": "http://10.0.0.1/"})
-    api = FakeApi(redirect)
+def test_get_bytes_joins_the_chunks_of_the_body(fake_api: FakeApi) -> None:
+    fake_api.response = httpx2.Response(200, content=iter([b'{"a"', b": 1}"]))
 
-    status_code, _ = get_bytes(api.client(follow_redirects=True), URL, SERVICE)
+    assert get_bytes(fake_api.client(), URL, SERVICE) == (200, b'{"a": 1}')
+
+
+def test_get_bytes_returns_a_redirect_without_following_it(fake_api: FakeApi) -> None:
+    fake_api.response = httpx2.Response(
+        302, content=b"{}", headers={"Location": "http://10.0.0.1/"}
+    )
+    client = fake_api.client(follow_redirects=True)
+
+    status_code, _ = get_bytes(client, URL, SERVICE)
 
     assert status_code == 302
-    assert len(api.requests) == 1
+    assert len(fake_api.requests) == 1
 
 
 @pytest.mark.parametrize(
     "body", [b"Too Many Requests", b'{"message": "rate limit exceeded"}'], ids=["text", "json"]
 )
-def test_get_bytes_reports_a_rate_limit_whatever_the_body(body: bytes) -> None:
-    client = FakeApi(httpx2.Response(429, content=body)).client()
+def test_get_bytes_reports_a_rate_limit_whatever_the_body(body: bytes, fake_api: FakeApi) -> None:
+    fake_api.response = httpx2.Response(429, content=body)
+    client = fake_api.client()
 
     with pytest.raises(RateLimitedError) as caught:
         get_bytes(client, URL, SERVICE)
@@ -56,10 +56,10 @@ def test_get_bytes_reports_a_rate_limit_whatever_the_body(body: bytes) -> None:
     assert caught.value.log_message == "Exemplo rate limit reached"
 
 
-def test_get_bytes_accepts_a_body_at_the_size_limit() -> None:
-    api = FakeApi(httpx2.Response(200, content=b"x" * MAX_BODY_BYTES))
+def test_get_bytes_accepts_a_body_at_the_size_limit(fake_api: FakeApi) -> None:
+    fake_api.response = httpx2.Response(200, content=b"x" * MAX_BODY_BYTES)
 
-    _, body = get_bytes(api.client(), URL, SERVICE)
+    _, body = get_bytes(fake_api.client(), URL, SERVICE)
 
     assert len(body) == MAX_BODY_BYTES
 
@@ -74,9 +74,10 @@ def test_get_bytes_accepts_a_body_at_the_size_limit() -> None:
     ids=["one body", "chunks", "compressed stream"],
 )
 def test_get_bytes_rejects_a_body_over_the_size_limit(
-    content: object, headers: dict[str, str]
+    content: object, headers: dict[str, str], fake_api: FakeApi
 ) -> None:
-    client = FakeApi(httpx2.Response(200, content=content, headers=headers)).client()
+    fake_api.response = httpx2.Response(200, content=content, headers=headers)
+    client = fake_api.client()
 
     with pytest.raises(ExternalServiceError) as caught:
         get_bytes(client, URL, SERVICE)
@@ -84,10 +85,7 @@ def test_get_bytes_rejects_a_body_over_the_size_limit(
     assert caught.value.log_message == f"Exemplo sent a body over {MAX_BODY_BYTES} bytes"
 
 
-def test_get_bytes_checks_the_deadline_on_every_chunk(monkeypatch: pytest.MonkeyPatch) -> None:
-    # Each clock reading adds one second, so the deadline passes mid-body.
-    clock = FakeClock()
-    monkeypatch.setattr(time, "monotonic", clock.monotonic)
+def test_get_bytes_checks_the_deadline_on_every_chunk(fake_api: FakeApi, clock: FakeClock) -> None:
     sent: list[bytes] = []
 
     def body() -> Iterator[bytes]:
@@ -95,17 +93,20 @@ def test_get_bytes_checks_the_deadline_on_every_chunk(monkeypatch: pytest.Monkey
             sent.append(chunk)
             yield chunk
 
-    client = FakeApi(httpx2.Response(200, content=body())).client()
+    fake_api.response = httpx2.Response(200, content=body())
+    client = fake_api.client()
 
     with pytest.raises(ExternalServiceError) as caught:
         get_bytes(client, URL, SERVICE)
 
     assert caught.value.log_message == "Exemplo took longer than the deadline"
     assert len(sent) == int(DEFAULT_TIMEOUT) + 1
+    assert clock.now > DEFAULT_TIMEOUT
 
 
-def test_get_bytes_keeps_the_transport_error_as_the_cause() -> None:
-    client = FakeApi(httpx2.ReadTimeout("slow")).client()
+def test_get_bytes_keeps_the_transport_error_as_the_cause(fake_api: FakeApi) -> None:
+    fake_api.response = httpx2.ReadTimeout("slow")
+    client = fake_api.client()
 
     with pytest.raises(ExternalServiceError) as caught:
         get_bytes(client, URL, SERVICE)
@@ -114,12 +115,13 @@ def test_get_bytes_keeps_the_transport_error_as_the_cause() -> None:
     assert isinstance(caught.value.__cause__, httpx2.ReadTimeout)
 
 
-def test_get_bytes_maps_a_failure_in_the_middle_of_the_body() -> None:
+def test_get_bytes_maps_a_failure_in_the_middle_of_the_body(fake_api: FakeApi) -> None:
     def body() -> Iterator[bytes]:
         yield b'{"a"'
         raise httpx2.ReadError("connection lost")
 
-    client = FakeApi(httpx2.Response(200, content=body())).client()
+    fake_api.response = httpx2.Response(200, content=body())
+    client = fake_api.client()
 
     with pytest.raises(ExternalServiceError) as caught:
         get_bytes(client, URL, SERVICE)

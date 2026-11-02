@@ -2,14 +2,11 @@ import httpx2
 import pytest
 from pydantic import ValidationError
 
+from src.connectors.companies import CnpjaCompanyLookup
 from src.connectors.exceptions import ExternalServiceError, RateLimitedError
 from src.domain.exceptions import CnpjNotFoundError, InvalidCnpjError
-from tests.connectors.helpers import (
-    cnpja_address_payload,
-    cnpja_company_payload,
-    cnpja_payload,
-    company_lookup_with,
-)
+from tests.connectors.fakes import FakeApi
+from tests.connectors.helpers import cnpja_address_payload, cnpja_company_payload, cnpja_payload
 from tests.connectors.samples import (
     AACD,
     AACD_TAX_ID,
@@ -45,13 +42,13 @@ from tests.helpers import fullwidth
         "non ascii digits",
     ],
 )
-def test_get_company_only_accepts_the_tax_id_the_service_normalized(tax_id: str) -> None:
-    lookup, api = company_lookup_with(httpx2.Response(200, json=AACD))
-
+def test_get_company_only_accepts_the_tax_id_the_service_normalized(
+    tax_id: str, fake_api: FakeApi, company_lookup: CnpjaCompanyLookup
+) -> None:
     with pytest.raises(InvalidCnpjError):
-        lookup.get_company(tax_id)
+        company_lookup.get_company(tax_id)
 
-    assert api.requests == []
+    assert fake_api.requests == []
 
 
 @pytest.mark.parametrize(
@@ -113,27 +110,33 @@ def test_get_company_only_accepts_the_tax_id_the_service_normalized(tax_id: str)
     ],
 )
 def test_get_company_maps_failures(
-    response: httpx2.Response | Exception, error: type[Exception]
+    response: httpx2.Response | Exception,
+    error: type[Exception],
+    fake_api: FakeApi,
+    company_lookup: CnpjaCompanyLookup,
 ) -> None:
-    lookup, _ = company_lookup_with(response)
+    fake_api.response = response
 
     with pytest.raises(error):
-        lookup.get_company(AACD_TAX_ID)
+        company_lookup.get_company(AACD_TAX_ID)
 
 
-def test_get_company_names_the_tax_id_that_was_not_found() -> None:
-    lookup, _ = company_lookup_with(httpx2.Response(404, json=CNPJ_NOT_FOUND))
+def test_get_company_names_the_tax_id_that_was_not_found(
+    fake_api: FakeApi, company_lookup: CnpjaCompanyLookup
+) -> None:
+    fake_api.response = httpx2.Response(404, json=CNPJ_NOT_FOUND)
 
     with pytest.raises(CnpjNotFoundError, match=AACD_TAX_ID):
-        lookup.get_company(AACD_TAX_ID)
+        company_lookup.get_company(AACD_TAX_ID)
 
 
-def test_get_company_keeps_the_validation_error_as_the_cause() -> None:
-    body = cnpja_address_payload(zip="7004091")
-    lookup, _ = company_lookup_with(httpx2.Response(200, json=body))
+def test_get_company_keeps_the_validation_error_as_the_cause(
+    fake_api: FakeApi, company_lookup: CnpjaCompanyLookup
+) -> None:
+    fake_api.response = httpx2.Response(200, json=cnpja_address_payload(zip="7004091"))
 
     with pytest.raises(ExternalServiceError) as caught:
-        lookup.get_company(AACD_TAX_ID)
+        company_lookup.get_company(AACD_TAX_ID)
 
     assert caught.value.log_message == "CNPJá sent an unexpected body"
     assert isinstance(caught.value.__cause__, ValidationError)

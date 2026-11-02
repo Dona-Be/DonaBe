@@ -3,8 +3,9 @@ import json
 import httpx2
 import pytest
 
+from src.connectors.addresses import BrasilApiAddressLookup
 from src.connectors.exceptions import ExternalServiceError
-from tests.connectors.helpers import address_lookup_with
+from tests.connectors.fakes import FakeApi
 from tests.connectors.samples import PAULISTA
 
 
@@ -29,11 +30,12 @@ from tests.connectors.samples import PAULISTA
         "empty longitude",
     ],
 )
-def test_get_address_returns_no_coordinates_when_they_are_missing(location: object) -> None:
-    body = {**PAULISTA, "location": location}
-    lookup, _ = address_lookup_with(httpx2.Response(200, json=body))
+def test_get_address_returns_no_coordinates_when_they_are_missing(
+    location: object, fake_api: FakeApi, address_lookup: BrasilApiAddressLookup
+) -> None:
+    fake_api.response = httpx2.Response(200, json={**PAULISTA, "location": location})
 
-    assert lookup.get_address("01310200").coordinates is None
+    assert address_lookup.get_address("01310200").coordinates is None
 
 
 @pytest.mark.parametrize(
@@ -57,18 +59,22 @@ def test_get_address_returns_no_coordinates_when_they_are_missing(location: obje
         "geojson list",
     ],
 )
-def test_get_address_rejects_invalid_coordinates(coordinates: object) -> None:
-    body = {**PAULISTA, "location": {"type": "Point", "coordinates": coordinates}}
-    lookup, _ = address_lookup_with(httpx2.Response(200, json=body))
+def test_get_address_rejects_invalid_coordinates(
+    coordinates: object, fake_api: FakeApi, address_lookup: BrasilApiAddressLookup
+) -> None:
+    location = {"type": "Point", "coordinates": coordinates}
+    fake_api.response = httpx2.Response(200, json={**PAULISTA, "location": location})
 
     with pytest.raises(ExternalServiceError):
-        lookup.get_address("01310200")
+        address_lookup.get_address("01310200")
 
 
-def test_get_address_rejects_a_nan_coordinate() -> None:
+def test_get_address_rejects_a_nan_coordinate(
+    fake_api: FakeApi, address_lookup: BrasilApiAddressLookup
+) -> None:
     coordinates = {"latitude": float("nan"), "longitude": "-46.6"}
     body = json.dumps({**PAULISTA, "location": {"coordinates": coordinates}}).encode()
-    lookup, _ = address_lookup_with(httpx2.Response(200, content=body))
+    fake_api.response = httpx2.Response(200, content=body)
 
     with pytest.raises(ExternalServiceError):
-        lookup.get_address("01310200")
+        address_lookup.get_address("01310200")

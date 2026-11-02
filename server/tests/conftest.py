@@ -2,6 +2,7 @@ import os
 from collections.abc import Iterator
 from pathlib import Path
 
+import httpx2
 import pytest
 from alembic import command
 from alembic.config import Config
@@ -10,7 +11,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, make_url, text
 from sqlalchemy.orm import Session
 
-from tests.connectors.fakes import no_network_client
+from tests.connectors.fakes import FakeApi, no_network_client
 from tests.fakes import FakeGoogleApp, google_token
 
 SERVER_DIR = Path(__file__).resolve().parents[1]
@@ -101,6 +102,12 @@ def db_session(clean_database: None) -> Iterator[Session]:
 @pytest.fixture
 def fake_google() -> FakeGoogleApp:
     return FakeGoogleApp(google_token())
+
+
+@pytest.fixture
+def fake_api() -> FakeApi:
+    # Each test sets fake_api.response to what the external API should answer.
+    return FakeApi(httpx2.Response(200, content=b"{}"))
 
 
 @pytest.fixture

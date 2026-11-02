@@ -48,31 +48,39 @@ def test_every_request_shares_one_http_client() -> None:
     assert get_http_client() is get_http_client()
 
 
-def test_the_cnpj_service_reaches_cnpja_through_the_http_client_of_the_app() -> None:
-    api = FakeApi(httpx2.Response(200, json=AACD))
+def test_the_cnpj_service_reaches_cnpja_through_the_http_client_of_the_app(
+    fake_api: FakeApi,
+) -> None:
+    fake_api.response = httpx2.Response(200, json=AACD)
 
-    response = client_with(api.client()).get(f"/cnpj/{AACD_TAX_ID}")
+    response = client_with(fake_api.client()).get(f"/cnpj/{AACD_TAX_ID}")
 
     assert response.json() == {"verdict": "nonprofit"}
-    assert str(api.requests[0].url) == f"https://open.cnpja.com/office/{AACD_TAX_ID}"
+    assert str(fake_api.requests[0].url) == f"https://open.cnpja.com/office/{AACD_TAX_ID}"
 
 
-def test_the_location_service_reaches_brasilapi_through_the_http_client_of_the_app() -> None:
-    api = FakeApi(httpx2.Response(200, json=PAULISTA))
+def test_the_location_service_reaches_brasilapi_through_the_http_client_of_the_app(
+    fake_api: FakeApi,
+) -> None:
+    fake_api.response = httpx2.Response(200, json=PAULISTA)
 
-    response = client_with(api.client()).get("/cep/01310-200")
+    response = client_with(fake_api.client()).get("/cep/01310-200")
 
     assert response.json() == {"city": "São Paulo"}
-    assert str(api.requests[0].url) == "https://brasilapi.com.br/api/cep/v2/01310200"
+    assert str(fake_api.requests[0].url) == "https://brasilapi.com.br/api/cep/v2/01310200"
 
 
-def test_the_location_service_reaches_osrm_through_the_http_client_of_the_app() -> None:
-    api = FakeApi(httpx2.Response(200, json=ROUTE_OK))
+def test_the_location_service_reaches_osrm_through_the_http_client_of_the_app(
+    fake_api: FakeApi,
+) -> None:
+    fake_api.response = httpx2.Response(200, json=ROUTE_OK)
 
-    response = client_with(api.client()).get("/route")
+    response = client_with(fake_api.client()).get("/route")
 
     assert response.json() == {"distance_meters": 3570.3}
-    assert str(api.requests[0].url).startswith("https://router.project-osrm.org/route/v1/driving/")
+    assert str(fake_api.requests[0].url).startswith(
+        "https://router.project-osrm.org/route/v1/driving/"
+    )
 
 
 def test_an_invalid_cnpj_answers_422_before_any_request_is_made() -> None:
@@ -82,19 +90,19 @@ def test_an_invalid_cnpj_answers_422_before_any_request_is_made() -> None:
     assert response.json() == {"detail": "O CNPJ informado é inválido."}
 
 
-def test_an_unknown_cep_answers_404_with_the_message_in_portuguese() -> None:
-    api = FakeApi(httpx2.Response(404, json=CEP_NOT_FOUND))
+def test_an_unknown_cep_answers_404_with_the_message_in_portuguese(fake_api: FakeApi) -> None:
+    fake_api.response = httpx2.Response(404, json=CEP_NOT_FOUND)
 
-    response = client_with(api.client()).get("/cep/01310200")
+    response = client_with(fake_api.client()).get("/cep/01310200")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "Nenhum endereço encontrado para o CEP 01310200."}
 
 
-def test_a_rate_limited_api_answers_503_and_asks_to_retry_later() -> None:
-    api = FakeApi(httpx2.Response(429, text="Too Many Requests"))
+def test_a_rate_limited_api_answers_503_and_asks_to_retry_later(fake_api: FakeApi) -> None:
+    fake_api.response = httpx2.Response(429, text="Too Many Requests")
 
-    response = client_with(api.client()).get(f"/cnpj/{AACD_TAX_ID}")
+    response = client_with(fake_api.client()).get(f"/cnpj/{AACD_TAX_ID}")
 
     assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
     assert response.headers["retry-after"] == "60"

@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -64,10 +65,8 @@ def test_me_with_tampered_cookie_is_unauthorized(client: TestClient) -> None:
     assert client.get("/api/auth/me").status_code == 401
 
 
-def test_logout_clears_the_cookies_and_invalidates_other_devices(
-    client: TestClient, db_session: Session
-) -> None:
-    create_donor(db_session)
+@pytest.mark.usefixtures("donor")
+def test_logout_clears_the_cookies_and_invalidates_other_devices(client: TestClient) -> None:
     client.get(GOOGLE_CALLBACK, follow_redirects=False)
     other_device_token = client.cookies[ACCESS_TOKEN_COOKIE]
 
@@ -82,8 +81,8 @@ def test_logout_clears_the_cookies_and_invalidates_other_devices(
     assert client.get("/api/auth/me").status_code == 401
 
 
-def test_login_after_logout_starts_a_fresh_session(client: TestClient, db_session: Session) -> None:
-    create_donor(db_session)
+@pytest.mark.usefixtures("donor")
+def test_login_after_logout_starts_a_fresh_session(client: TestClient) -> None:
     client.get(GOOGLE_CALLBACK, follow_redirects=False)
     client.post("/api/auth/logout")
 
