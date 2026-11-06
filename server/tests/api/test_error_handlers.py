@@ -5,7 +5,12 @@ from fastapi import Request, status
 
 from src.api.error_handlers import respond_with_error, status_for
 from src.connectors.exceptions import ExternalServiceError, RateLimitedError
-from src.domain.exceptions import CnpjNotFoundError, DomainError, UserAlreadyExistsError
+from src.domain.exceptions import (
+    CnpjNotFoundError,
+    DomainError,
+    UnsupportedLegalNatureError,
+    UserAlreadyExistsError,
+)
 
 REQUEST = Request(
     {"type": "http", "method": "GET", "path": "/", "headers": [], "query_string": b""}
@@ -41,6 +46,12 @@ def test_a_domain_error_answers_with_its_own_message() -> None:
     assert body_of(response.body) == {
         "detail": "Nenhuma empresa encontrada com o CNPJ 00000000000191."
     }
+
+
+def test_an_unsupported_legal_nature_is_unprocessable() -> None:
+    error = UnsupportedLegalNatureError("2062 - Sociedade Empresária Limitada")
+
+    assert status_for(error) == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 def test_a_domain_error_without_its_own_status_is_a_bad_request() -> None:
