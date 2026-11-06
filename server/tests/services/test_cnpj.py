@@ -2,12 +2,12 @@ from typing import Any
 
 import pytest
 
-from src.connectors.companies import CompanyLookup
 from src.connectors.exceptions import ExternalServiceError, RateLimitedError
 from src.connectors.schemas import Address, Company
 from src.domain.enums import Verdict
 from src.domain.exceptions import CnpjNotFoundError, InvalidCnpjError
 from src.services.cnpj import CnpjService
+from tests.fakes import FakeCompanyLookup
 
 TAX_ID = "60979457000111"
 CHARITY_FIELDS: dict[str, Any] = {
@@ -26,18 +26,6 @@ CHARITY_FIELDS: dict[str, Any] = {
 
 def company(**changes: Any) -> Company:
     return Company(**{**CHARITY_FIELDS, **changes})
-
-
-class FakeCompanyLookup(CompanyLookup):
-    def __init__(self, answer: Company | Exception) -> None:
-        self.answer = answer
-        self.calls: list[str] = []
-
-    def get_company(self, tax_id: str) -> Company:
-        self.calls.append(tax_id)
-        if isinstance(self.answer, Exception):
-            raise self.answer
-        return self.answer
 
 
 def test_classify_normalizes_the_cnpj_and_classifies_the_company() -> None:

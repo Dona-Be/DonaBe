@@ -4,7 +4,8 @@ from fastapi.responses import RedirectResponse
 from starlette.requests import Request
 
 from src.connectors.addresses import AddressLookup
-from src.connectors.schemas import Address
+from src.connectors.companies import CompanyLookup
+from src.connectors.schemas import Address, Company
 
 USER_EMAIL = "maria@exemplo.com"
 USER_NAME = "Maria"
@@ -40,6 +41,18 @@ class FakeAddressLookup(AddressLookup):
 
     def get_address(self, cep: str) -> Address:
         self.calls.append(cep)
+        if isinstance(self.answer, Exception):
+            raise self.answer
+        return self.answer
+
+
+class FakeCompanyLookup(CompanyLookup):
+    def __init__(self, answer: Company | Exception) -> None:
+        self.answer = answer
+        self.calls: list[str] = []
+
+    def get_company(self, tax_id: str) -> Company:
+        self.calls.append(tax_id)
         if isinstance(self.answer, Exception):
             raise self.answer
         return self.answer
