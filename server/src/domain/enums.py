@@ -32,12 +32,6 @@ class Verdict(StrEnum):
     UNLIKELY = "unlikely"
 
 
-class NeedType(StrEnum):
-    ITEMS = "items"
-    VOLUNTEERS = "volunteers"
-    MONEY = "money"
-
-
 class NeedStatus(StrEnum):
     OPEN = "open"
     FULFILLED = "fulfilled"

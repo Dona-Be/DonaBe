@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import DateTime, ForeignKey, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.domain.enums import NeedStatus, NeedType
+from src.domain.enums import NeedStatus
 from src.models.base import Base, created_at_column, enum_type
 
 if TYPE_CHECKING:
@@ -22,7 +22,6 @@ class Need(Base):
     institution_id: Mapped[int] = mapped_column(ForeignKey("institutions.id"))
     title: Mapped[str]
     description: Mapped[str]
-    type: Mapped[NeedType] = mapped_column(enum_type(NeedType), index=True)
     quantity: Mapped[str | None]
     status: Mapped[NeedStatus] = mapped_column(enum_type(NeedStatus))
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
