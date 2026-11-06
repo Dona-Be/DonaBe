@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 
 from src.api.frontend_paths import LOGIN_FAILED_PATH
 from src.auth.google import GoogleLoginError
-from src.connectors.exceptions import ExternalServiceError, RateLimitedError
+from src.connectors.exceptions import ExternalServiceError
 from src.core.config import settings
 from src.domain.exceptions import (
     CepNotFoundError,
@@ -32,8 +32,7 @@ HTTP_STATUS_BY_ERROR: dict[type[Exception], int] = {
     CnpjNotFoundError: status.HTTP_404_NOT_FOUND,
     CepNotFoundError: status.HTTP_404_NOT_FOUND,
     RouteNotFoundError: status.HTTP_404_NOT_FOUND,
-    ExternalServiceError: status.HTTP_502_BAD_GATEWAY,
-    RateLimitedError: status.HTTP_503_SERVICE_UNAVAILABLE,
+    ExternalServiceError: status.HTTP_503_SERVICE_UNAVAILABLE,
 }
 
 

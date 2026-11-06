@@ -55,8 +55,8 @@ def test_an_external_failure_logs_the_detail_and_hides_it_from_the_user(
 ) -> None:
     response = respond_with_error(REQUEST, ExternalServiceError("CNPJá answered HTTP 500"))
 
-    assert response.status_code == status.HTTP_502_BAD_GATEWAY
-    assert "retry-after" not in response.headers
+    assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+    assert response.headers["retry-after"] == "60"
     assert body_of(response.body) == {"detail": EXTERNAL_FAILURE_MESSAGE}
     assert "CNPJá answered HTTP 500" in caplog.text
     assert EXTERNAL_FAILURE_MESSAGE not in caplog.text
