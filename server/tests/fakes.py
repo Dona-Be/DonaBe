@@ -3,6 +3,9 @@ from typing import Any
 from fastapi.responses import RedirectResponse
 from starlette.requests import Request
 
+from src.connectors.addresses import AddressLookup
+from src.connectors.schemas import Address
+
 USER_EMAIL = "maria@exemplo.com"
 USER_NAME = "Maria"
 USER_PICTURE = "https://exemplo.com/maria.png"
@@ -28,3 +31,15 @@ class FakeGoogleApp:
         if self.error is not None:
             raise self.error
         return self.token
+
+
+class FakeAddressLookup(AddressLookup):
+    def __init__(self, answer: Address | Exception) -> None:
+        self.answer = answer
+        self.calls: list[str] = []
+
+    def get_address(self, cep: str) -> Address:
+        self.calls.append(cep)
+        if isinstance(self.answer, Exception):
+            raise self.answer
+        return self.answer
