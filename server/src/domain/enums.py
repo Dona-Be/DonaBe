@@ -6,6 +6,12 @@ class Role(StrEnum):
     MANAGER = "manager"
 
 
+class InstitutionType(StrEnum):
+    ASSOCIATION = "association"
+    FOUNDATION = "foundation"
+    RELIGIOUS_ORGANIZATION = "religious_organization"
+
+
 class Cause(StrEnum):
     CHILDREN_AND_TEENAGERS = "children_and_teenagers"
     ELDERLY = "elderly"

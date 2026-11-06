@@ -7,8 +7,8 @@ from src.domain.enums import Verdict
 
 ACTIVE_STATUS = "ativa"
 
-# 3069 = Fundação Privada, 3999 = Associação Privada.
-NONPROFIT_LEGAL_NATURES = frozenset({"3069", "3999"})
+# 3069 = Fundação Privada, 3220 = Organização Religiosa, 3999 = Associação Privada.
+NONPROFIT_LEGAL_NATURES = frozenset({"3069", "3220", "3999"})
 
 # CNAE prefixes: 8610/8690 health care, 87-88 social assistance, 9430 social rights advocacy.
 CHARITY_CNAE_PREFIXES = ("8610", "8690", "87", "88", "9430")

@@ -10,10 +10,11 @@ from src.domain.enums import Verdict
 
 PRIVATE_ASSOCIATION = RegistryCode("3999", "Associação Privada")
 PRIVATE_FOUNDATION = RegistryCode("3069", "Fundação Privada")
+RELIGIOUS_ORGANIZATION = RegistryCode("3220", "Organização Religiosa")
 LIMITED_COMPANY = RegistryCode("2062", "Sociedade Empresária Limitada")
 SOCIAL_ASSISTANCE = RegistryCode("8800600", "Serviços de assistência social sem alojamento")
 HOSPITAL_CARE = RegistryCode("8610101", "Atividades de atendimento hospitalar")
-RELIGIOUS_ORGANIZATION = RegistryCode("9491000", "Atividades de organizações religiosas")
+RELIGIOUS_ACTIVITIES = RegistryCode("9491000", "Atividades de organizações religiosas")
 IT_CONSULTING = RegistryCode("6204000", "Consultoria em tecnologia da informação")
 
 
@@ -30,7 +31,8 @@ def registry_data(
     [
         ("Ativa", PRIVATE_ASSOCIATION, SOCIAL_ASSISTANCE, Verdict.LIKELY_CHARITY),
         ("ATIVA ", PRIVATE_FOUNDATION, HOSPITAL_CARE, Verdict.LIKELY_CHARITY),
-        ("Ativa", PRIVATE_FOUNDATION, RELIGIOUS_ORGANIZATION, Verdict.NONPROFIT),
+        ("Ativa", RELIGIOUS_ORGANIZATION, SOCIAL_ASSISTANCE, Verdict.LIKELY_CHARITY),
+        ("Ativa", PRIVATE_FOUNDATION, RELIGIOUS_ACTIVITIES, Verdict.NONPROFIT),
         ("Ativa", LIMITED_COMPANY, SOCIAL_ASSISTANCE, Verdict.UNLIKELY),
         ("Ativa", LIMITED_COMPANY, IT_CONSULTING, Verdict.UNLIKELY),
         ("Baixada", PRIVATE_ASSOCIATION, SOCIAL_ASSISTANCE, Verdict.INACTIVE),

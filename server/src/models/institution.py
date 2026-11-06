@@ -1,12 +1,12 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from geoalchemy2 import Geography, WKBElement
 from sqlalchemy import ForeignKey, Index, String
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.domain.enums import Cause, Verdict
+from src.domain.enums import Cause, InstitutionType, Verdict
 from src.models.base import Base, created_at_column, enum_type
 
 if TYPE_CHECKING:
@@ -20,8 +20,15 @@ EMPTY_LIST = "{}"
 class Institution(Base):
     __tablename__ = "institutions"
     __table_args__ = (Index(CAUSES_INDEX, "causes", postgresql_using="gin"),)
+    # Single-table inheritance, the type column decides which subclass a row becomes, and
+    # Institution itself is never instantiated.
+    __mapper_args__ = {"polymorphic_on": "type", "polymorphic_abstract": True}
+
+    type_description: ClassVar[str]
+    suggested_causes: ClassVar[tuple[Cause, ...]]
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    type: Mapped[InstitutionType] = mapped_column(enum_type(InstitutionType))
     cnpj: Mapped[str] = mapped_column(String(14), unique=True)
     legal_name: Mapped[str]
     trade_name: Mapped[str | None]
@@ -42,7 +49,6 @@ class Institution(Base):
     website: Mapped[str | None]
     instagram: Mapped[str | None]
     facebook: Mapped[str | None]
-    pix_key: Mapped[str | None]
     verdict: Mapped[Verdict] = mapped_column(enum_type(Verdict))
     reasons: Mapped[list[str]] = mapped_column(ARRAY(String))
     cnpj_data: Mapped[dict[str, Any]] = mapped_column(JSONB, deferred=True)
@@ -50,3 +56,24 @@ class Institution(Base):
     created_at: Mapped[datetime] = created_at_column()
 
     manager: Mapped["Manager"] = relationship(back_populates="institutions")
+
+
+class Association(Institution):
+    __mapper_args__ = {"polymorphic_identity": InstitutionType.ASSOCIATION}
+
+    type_description = "Associação privada"
+    suggested_causes = (Cause.CHILDREN_AND_TEENAGERS, Cause.PEOPLE_WITH_DISABILITIES, Cause.ANIMALS)
+
+
+class Foundation(Institution):
+    __mapper_args__ = {"polymorphic_identity": InstitutionType.FOUNDATION}
+
+    type_description = "Fundação privada"
+    suggested_causes = (Cause.HEALTH, Cause.EDUCATION, Cause.ENVIRONMENT)
+
+
+class ReligiousOrganization(Institution):
+    __mapper_args__ = {"polymorphic_identity": InstitutionType.RELIGIOUS_ORGANIZATION}
+
+    type_description = "Organização religiosa"
+    suggested_causes = (Cause.HUNGER_RELIEF, Cause.HOMELESS_PEOPLE, Cause.ELDERLY)
