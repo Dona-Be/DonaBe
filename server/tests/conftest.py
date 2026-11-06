@@ -28,8 +28,8 @@ WRONG_TEST_DATABASE_MESSAGE = (
     "TEST_DATABASE_URL must point to a database whose name ends with _test, because the tests "
     "drop and empty its tables."
 )
-# The settings are read when src is imported, so the environment is fixed here and src is
-# imported lazily inside the fixtures, after this module ran.
+# The settings are read when src.core.config is imported, so the environment is fixed here and
+# the modules that read them are imported lazily inside the fixtures, after this module ran.
 os.environ.update(
     {
         "ENVIRONMENT": "development",

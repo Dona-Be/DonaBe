@@ -1,27 +1,15 @@
 import pytest
 
-from src.connectors.addresses import AddressLookup
 from src.connectors.routing import RoutePlanner
 from src.connectors.schemas import Address, Coordinates, Route
 from src.domain.exceptions import CepNotFoundError, CepWithoutCoordinatesError, InvalidCepError
 from src.services.locations import LocationService
+from tests.fakes import FakeAddressLookup
 
 PRACA_DA_SE = Coordinates(latitude=-23.5503898, longitude=-46.633081)
 BRASILIA = Coordinates(latitude=-15.77972, longitude=-47.92972)
 SE_ADDRESS = Address(postal_code="01001000", state="SP", city="São Paulo", coordinates=PRACA_DA_SE)
 ROUTE = Route(distance_meters=1015234.5, duration_seconds=43210.7)
-
-
-class FakeAddressLookup(AddressLookup):
-    def __init__(self, answer: Address | Exception) -> None:
-        self.answer = answer
-        self.calls: list[str] = []
-
-    def get_address(self, cep: str) -> Address:
-        self.calls.append(cep)
-        if isinstance(self.answer, Exception):
-            raise self.answer
-        return self.answer
 
 
 class FakeRoutePlanner(RoutePlanner):
