@@ -23,6 +23,7 @@ VALID_AREA_CODES = frozenset({
 
 CELLPHONE_PATTERN = re.compile(r"^([1-9]{2})9[0-9]{8}$")
 LANDLINE_PATTERN = re.compile(r"^([1-9]{2})[2-5][0-9]{7}$")
+PHONE_PATTERN = re.compile(r"^([1-9]{2})(?:9[0-9]{8}|[2-5][0-9]{7})$")
 NOT_DIGIT = re.compile(r"[^0-9]")
 
 
@@ -32,6 +33,10 @@ def validate_cellphone(number: str) -> str:
 
 def validate_landline(number: str) -> str:
     return validate_phone(number, LANDLINE_PATTERN, "Não é um número de telefone fixo válido.")
+
+
+def validate_cellphone_or_landline(number: str) -> str:
+    return validate_phone(number, PHONE_PATTERN, "Não é um número de telefone válido.")
 
 
 def validate_phone(number: str, pattern: re.Pattern[str], error_message: str) -> str:
