@@ -44,6 +44,16 @@ def test_an_optional_field_can_be_cleared(attribute: str, value: str) -> None:
     assert getattr(donor, attribute) is None
 
 
+def test_the_donor_location_has_a_gist_index() -> None:
+    # test_migration makes sure the migrations create this same index in the database.
+    indexes = {index.name: index for index in Donor.__table__.indexes}
+
+    location_index = indexes["idx_users_location"]
+
+    assert [column.name for column in location_index.columns] == ["location"]
+    assert location_index.dialect_options["postgresql"]["using"] == "gist"
+
+
 @pytest.mark.parametrize("attribute", ["postal_code", "location", "preferred_causes"])
 def test_a_manager_has_none_of_the_donor_fields(attribute: str) -> None:
     # Single-table inheritance: the donor columns exist in the users table, but not in Manager.
