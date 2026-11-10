@@ -17,6 +17,13 @@ class CnpjNotFoundError(DomainError):
         super().__init__(f"Nenhuma empresa encontrada com o CNPJ {cnpj}.")
 
 
+class UnsupportedLegalNatureError(DomainError):
+    def __init__(self, legal_nature: str) -> None:
+        super().__init__(
+            f"Não é possível cadastrar instituições com a natureza jurídica {legal_nature}."
+        )
+
+
 class InvalidCepError(DomainError):
     def __init__(self) -> None:
         super().__init__("O CEP informado é inválido.")

@@ -16,6 +16,7 @@ from src.domain.exceptions import (
     InvalidCnpjError,
     InvalidPhoneError,
     RouteNotFoundError,
+    UnsupportedLegalNatureError,
     UserAlreadyExistsError,
 )
 
@@ -28,6 +29,7 @@ HTTP_STATUS_BY_ERROR: dict[type[Exception], int] = {
     DomainError: status.HTTP_400_BAD_REQUEST,
     UserAlreadyExistsError: status.HTTP_409_CONFLICT,
     InvalidCnpjError: status.HTTP_422_UNPROCESSABLE_CONTENT,
+    UnsupportedLegalNatureError: status.HTTP_422_UNPROCESSABLE_CONTENT,
     InvalidCepError: status.HTTP_422_UNPROCESSABLE_CONTENT,
     InvalidPhoneError: status.HTTP_422_UNPROCESSABLE_CONTENT,
     CepWithoutCoordinatesError: status.HTTP_422_UNPROCESSABLE_CONTENT,
