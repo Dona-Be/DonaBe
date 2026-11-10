@@ -1,9 +1,7 @@
 import pytest
 
-from src.domain.exceptions import InvalidCepError
+from src.domain.exceptions import InvalidCepError, InvalidPhoneError
 from src.models.user import Donor, Manager, User
-
-PHONE_MESSAGE = "Não é um número de telefone válido."
 
 
 @pytest.mark.parametrize("user_class", [Donor, Manager])
@@ -19,7 +17,7 @@ def test_the_phone_of_any_user_keeps_only_the_digits(
 
 
 def test_an_invalid_phone_is_rejected() -> None:
-    with pytest.raises(ValueError, match=PHONE_MESSAGE):
+    with pytest.raises(InvalidPhoneError):
         Donor(phone="(11) 9999-000")
 
 
