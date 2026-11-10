@@ -22,6 +22,11 @@ class InvalidCepError(DomainError):
         super().__init__("O CEP informado é inválido.")
 
 
+class InvalidPhoneError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("O telefone informado é inválido.")
+
+
 class CepNotFoundError(DomainError):
     def __init__(self, cep: str) -> None:
         super().__init__(f"Nenhum endereço encontrado para o CEP {cep}.")

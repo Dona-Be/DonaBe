@@ -1,5 +1,7 @@
 import re
 
+from src.domain.exceptions import InvalidPhoneError
+
 # fmt: off
 VALID_AREA_CODES = frozenset({
     # Southeast
@@ -21,31 +23,30 @@ VALID_AREA_CODES = frozenset({
 })
 # fmt: on
 
-CELLPHONE_PATTERN = re.compile(r"^([1-9]{2})9[0-9]{8}$")
-LANDLINE_PATTERN = re.compile(r"^([1-9]{2})[2-5][0-9]{7}$")
-PHONE_PATTERN = re.compile(r"^([1-9]{2})(?:9[0-9]{8}|[2-5][0-9]{7})$")
+AREA_CODE = "([1-9]{2})"
+CELLPHONE_NUMBER = "9[0-9]{8}"
+LANDLINE_NUMBER = "[2-5][0-9]{7}"
+CELLPHONE_PATTERN = re.compile(f"^{AREA_CODE}{CELLPHONE_NUMBER}$")
+LANDLINE_PATTERN = re.compile(f"^{AREA_CODE}{LANDLINE_NUMBER}$")
+PHONE_PATTERN = re.compile(f"^{AREA_CODE}(?:{CELLPHONE_NUMBER}|{LANDLINE_NUMBER})$")
 NOT_DIGIT = re.compile(r"[^0-9]")
 
 
 def validate_cellphone(number: str) -> str:
-    return validate_phone(number, CELLPHONE_PATTERN, "Não é um número de celular válido.")
+    return validate_phone(number, CELLPHONE_PATTERN)
 
 
 def validate_landline(number: str) -> str:
-    return validate_phone(number, LANDLINE_PATTERN, "Não é um número de telefone fixo válido.")
+    return validate_phone(number, LANDLINE_PATTERN)
 
 
 def validate_cellphone_or_landline(number: str) -> str:
-    return validate_phone(number, PHONE_PATTERN, "Não é um número de telefone válido.")
+    return validate_phone(number, PHONE_PATTERN)
 
 
-def validate_phone(number: str, pattern: re.Pattern[str], error_message: str) -> str:
-    # ValueError, so pydantic turns it into a 422 inside a field validator.
+def validate_phone(number: str, pattern: re.Pattern[str]) -> str:
     digits = NOT_DIGIT.sub("", number)
     match = pattern.fullmatch(digits)
-    if match is None:
-        raise ValueError(error_message)
-    area_code = match.group(1)
-    if int(area_code) not in VALID_AREA_CODES:
-        raise ValueError(f"O DDD {area_code} é inválido.")
+    if match is None or int(match.group(1)) not in VALID_AREA_CODES:
+        raise InvalidPhoneError()
     return digits
