@@ -22,7 +22,11 @@ class ProfileService:
         self._locations = locations
 
     def create_donor(
-        self, profile: UserProfile, postal_code: str, preferred_causes: list[Cause]
+        self,
+        profile: UserProfile,
+        postal_code: str,
+        preferred_causes: list[Cause],
+        phone: str | None,
     ) -> User:
         return self._users.sign_up(
             profile,
@@ -30,6 +34,7 @@ class ProfileService:
             postal_code=postal_code,
             location=self._locate(postal_code),
             preferred_causes=preferred_causes,
+            phone=phone,
         )
 
     def update(self, user: User, changes: dict[str, Any]) -> None:

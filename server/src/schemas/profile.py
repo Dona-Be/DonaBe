@@ -20,6 +20,7 @@ class Profile(BaseModel):
 class NewDonor(BaseModel):
     postal_code: str
     preferred_causes: list[Cause] = Field(max_length=len(Cause))
+    phone: str | None = None
 
 
 class ProfileChanges(BaseModel):

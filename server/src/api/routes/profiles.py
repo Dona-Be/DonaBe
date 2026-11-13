@@ -23,7 +23,7 @@ router = APIRouter(prefix="/profiles", tags=["profiles"])
 def create_donor(
     data: NewDonor, profile: NewUserProfile, service: ProfileServiceDep, response: Response
 ) -> User:
-    donor = service.create_donor(profile, data.postal_code, data.preferred_causes)
+    donor = service.create_donor(profile, data.postal_code, data.preferred_causes, data.phone)
     start_session(response, donor)
     return donor
 
