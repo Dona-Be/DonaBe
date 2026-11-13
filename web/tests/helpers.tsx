@@ -4,30 +4,33 @@ import { MemoryRouter } from "react-router";
 import { vi } from "vitest";
 import { App } from "../src/App";
 import { AuthProvider } from "../src/auth/AuthProvider";
-import type { PublicUser } from "../src/types/user";
+import type { Profile } from "../src/types/user";
 
 interface FakeResponse {
   status?: number;
   body?: unknown;
 }
 
-export const USER: PublicUser = {
-  id: 1,
+export const USER: Profile = {
   email: "maria@exemplo.com",
   name: "Maria Silva",
   picture_url: null,
+  phone: null,
   role: "donor",
+  postal_code: "01310200",
+  preferred_causes: ["animals", "health"],
 };
+
+export const NEWCOMER: Profile = { ...USER, role: null, postal_code: null, preferred_causes: null };
 
 export const UNAUTHORIZED: FakeResponse = {
   status: 401,
-  body: { detail: "Você precisa entrar para continuar." },
+  body: { detail: "Nenhum cadastro pendente. Entre com o Google novamente." },
 };
 
-export const VISITOR = {
-  "GET /api/auth/me": UNAUTHORIZED,
-  "GET /api/auth/pending-signup": UNAUTHORIZED,
-};
+export const VISITOR = { "GET /api/profiles/me": UNAUTHORIZED };
+
+export const NEWCOMER_SESSION = { "GET /api/profiles/me": { body: NEWCOMER } };
 
 function requestKey(input: RequestInfo | URL, options?: RequestInit): string {
   const url = input instanceof Request ? input.url : input.toString();

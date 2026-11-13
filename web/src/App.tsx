@@ -9,15 +9,15 @@ import { routes } from "./routes";
 export function App() {
   return (
     <Routes>
-      <Route element={<Layout />}>
-        <Route element={<ProtectedRoute />}>
+      <Route element={<ProtectedRoute />}>
+        <Route element={<Layout />}>
           <Route path={routes.dashboard} element={<Dashboard />} />
         </Route>
-        <Route element={<GuestRoute />}>
-          <Route path={routes.login} element={<Login />} />
-        </Route>
-        <Route path="*" element={<Navigate to={routes.dashboard} replace />} />
       </Route>
+      <Route element={<GuestRoute />}>
+        <Route path={routes.login} element={<Login />} />
+      </Route>
+      <Route path="*" element={<Navigate to={routes.dashboard} replace />} />
     </Routes>
   );
 }
