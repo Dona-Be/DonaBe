@@ -41,9 +41,14 @@ class CepNotFoundError(DomainError):
 
 class CepWithoutCoordinatesError(DomainError):
     def __init__(self, cep: str) -> None:
-        super().__init__(f"O CEP {cep} não tem uma localização conhecida.")
+        super().__init__(f"O CEP {cep} não tem uma localização conhecida. Informe um CEP próximo.")
 
 
 class RouteNotFoundError(DomainError):
     def __init__(self) -> None:
         super().__init__("Não foi possível traçar uma rota entre os dois endereços.")
+
+
+class FieldNotInProfileError(DomainError):
+    def __init__(self, field: str) -> None:
+        super().__init__(f"O campo {field} não faz parte do seu perfil.")

@@ -20,10 +20,10 @@ class UserService:
             return None
         return user
 
-    def sign_up(self, profile: UserProfile, role: Role) -> User:
+    def sign_up(self, profile: UserProfile, role: Role, **details: object) -> User:
         if self._repository.find_by_email(profile.email) is not None:
             raise UserAlreadyExistsError(profile.email)
-        user = USER_CLASS_BY_ROLE[role].from_profile(profile)
+        user = USER_CLASS_BY_ROLE[role].from_profile(profile, **details)
         self._repository.save(user)
         return user
 
