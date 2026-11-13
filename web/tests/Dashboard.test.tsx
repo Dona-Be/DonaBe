@@ -1,18 +1,10 @@
 import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import {
-  mockFetch,
-  mockNetworkFailure,
-  renderApp,
-  requestsMade,
-  UNAUTHORIZED,
-  USER,
-  VISITOR,
-} from "./helpers";
+import { mockFetch, mockNetworkFailure, renderApp, requestsMade, USER, VISITOR } from "./helpers";
 
 describe("Dashboard", () => {
   it("shows the name, e-mail and role of the current user", async () => {
-    mockFetch({ "GET /api/auth/me": { body: USER } });
+    mockFetch({ "GET /api/profiles/me": { body: USER } });
 
     renderApp("/");
 
@@ -26,21 +18,20 @@ describe("Dashboard", () => {
 
   it("logs out and goes to the login page", async () => {
     const fetchMock = mockFetch({
-      "GET /api/auth/me": { body: USER },
+      "GET /api/profiles/me": { body: USER },
       "POST /api/auth/logout": { status: 204 },
-      "GET /api/auth/pending-signup": UNAUTHORIZED,
     });
     const user = renderApp("/");
 
     await user.click(await screen.findByRole("button", { name: "Sair de todos os aparelhos" }));
 
-    expect(await screen.findByRole("link", { name: "Entrar com Google" })).toBeTruthy();
+    expect(await screen.findByRole("link", { name: "Entrar com o Google" })).toBeTruthy();
     expect(requestsMade(fetchMock)).toContain("POST /api/auth/logout");
   });
 
   it("warns when it cannot log out", async () => {
     mockFetch({
-      "GET /api/auth/me": { body: USER },
+      "GET /api/profiles/me": { body: USER },
       "POST /api/auth/logout": { status: 500, body: { detail: "Falha interna." } },
     });
     const user = renderApp("/");
@@ -56,7 +47,7 @@ describe("Dashboard", () => {
 
     renderApp("/");
 
-    expect(await screen.findByRole("link", { name: "Entrar com Google" })).toBeTruthy();
+    expect(await screen.findByRole("link", { name: "Entrar com o Google" })).toBeTruthy();
   });
 
   it("treats a failed session check as a visitor", async () => {
@@ -64,11 +55,11 @@ describe("Dashboard", () => {
 
     renderApp("/");
 
-    expect(await screen.findByRole("link", { name: "Entrar com Google" })).toBeTruthy();
+    expect(await screen.findByRole("link", { name: "Entrar com o Google" })).toBeTruthy();
   });
 
   it("sends unknown routes to the dashboard", async () => {
-    mockFetch({ "GET /api/auth/me": { body: USER } });
+    mockFetch({ "GET /api/profiles/me": { body: USER } });
 
     renderApp("/unknown");
 
