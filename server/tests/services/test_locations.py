@@ -1,5 +1,6 @@
 import pytest
 
+from src.connectors.addresses import AddressLookup
 from src.connectors.routing import RoutePlanner
 from src.connectors.schemas import Address, Coordinates, Route
 from src.domain.exceptions import CepNotFoundError, CepWithoutCoordinatesError, InvalidCepError
@@ -20,6 +21,14 @@ class FakeRoutePlanner(RoutePlanner):
     def get_route(self, origin: Coordinates, destination: Coordinates) -> Route:
         self.calls.append((origin, destination))
         return self.route
+
+
+class FakeAddressesByCep(AddressLookup):
+    def __init__(self, coordinates: dict[str, Coordinates]) -> None:
+        self.coordinates = coordinates
+
+    def get_address(self, cep: str) -> Address:
+        return Address(state="SP", city="São Paulo", coordinates=self.coordinates[cep])
 
 
 def service_with(answer: Address | Exception) -> tuple[LocationService, FakeAddressLookup]:
@@ -62,4 +71,13 @@ def test_route_between_asks_the_route_planner() -> None:
     service = LocationService(FakeAddressLookup(SE_ADDRESS), routes)
 
     assert service.route_between(PRACA_DA_SE, BRASILIA) == ROUTE
+    assert routes.calls == [(PRACA_DA_SE, BRASILIA)]
+
+
+def test_distance_km_routes_from_the_origin_cep_to_the_destination_cep() -> None:
+    routes = FakeRoutePlanner(ROUTE)
+    addresses = FakeAddressesByCep({"01001000": PRACA_DA_SE, "70040010": BRASILIA})
+    service = LocationService(addresses, routes)
+
+    assert service.distance_km("01001-000", "70040-010") == pytest.approx(1015.2345)
     assert routes.calls == [(PRACA_DA_SE, BRASILIA)]
