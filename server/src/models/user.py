@@ -43,12 +43,13 @@ class User(Base):
         return validate_cellphone_or_landline(phone)
 
     @classmethod
-    def from_profile(cls, profile: UserProfile) -> Self:
+    def from_profile(cls, profile: UserProfile, **details: object) -> Self:
         return cls(
             email=profile.email,
             name=profile.name,
             picture_url=profile.picture_url,
             session_version=FIRST_SESSION_VERSION,
+            **details,
         )
 
     def end_sessions(self) -> None:

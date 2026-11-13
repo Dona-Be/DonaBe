@@ -14,6 +14,7 @@ from src.core.database import engine
 from src.repositories.users import SqlAlchemyUserRepository, UserRepository
 from src.services.cnpj import CnpjService
 from src.services.locations import LocationService
+from src.services.profiles import ProfileService
 from src.services.users import UserService
 
 
@@ -78,3 +79,14 @@ def get_location_service(
 
 
 LocationServiceDep = Annotated[LocationService, Depends(get_location_service)]
+
+
+def get_profile_service(
+    users: UserServiceDep,
+    repository: Annotated[UserRepository, Depends(get_user_repository)],
+    locations: LocationServiceDep,
+) -> ProfileService:
+    return ProfileService(users, repository, locations)
+
+
+ProfileServiceDep = Annotated[ProfileService, Depends(get_profile_service)]
