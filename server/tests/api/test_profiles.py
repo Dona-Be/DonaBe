@@ -44,6 +44,22 @@ def test_donor_signup_saves_the_coordinates_of_the_cep(
     assert location == "POINT(-46.63611 -23.5475)"
 
 
+@pytest.mark.usefixtures("brasilapi")
+def test_donor_signup_accepts_an_optional_phone(client: TestClient) -> None:
+    response = sign_up(client, "donor", {**DONOR_SIGNUP, "phone": "(11) 99999-0000"})
+
+    assert response.json() == {**DONOR_PROFILE, "phone": "11999990000"}
+
+
+@pytest.mark.usefixtures("brasilapi")
+def test_donor_signup_with_an_invalid_phone_creates_nobody(client: TestClient) -> None:
+    response = sign_up(client, "donor", {**DONOR_SIGNUP, "phone": "(11) 9999-000"})
+
+    assert response.status_code == 422
+    assert response.json() == {"detail": "O telefone informado é inválido."}
+    assert client.get("/api/profiles/me").json() == PENDING_PROFILE
+
+
 def test_manager_signup_creates_the_manager_and_starts_the_session(client: TestClient) -> None:
     response = sign_up(client, "manager")
 
