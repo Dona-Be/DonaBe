@@ -104,8 +104,12 @@ def test_manager_cannot_edit_the_donor_fields(
     assert client.get(ME).json() == MANAGER_PROFILE
 
 
-def test_pending_signup_cannot_edit_a_profile(client: TestClient) -> None:
-    client.get(GOOGLE_CALLBACK, follow_redirects=False)
+@pytest.mark.parametrize("has_pending_signup", [True, False])
+def test_only_a_logged_in_user_edits_a_profile(
+    client: TestClient, has_pending_signup: bool
+) -> None:
+    if has_pending_signup:
+        client.get(GOOGLE_CALLBACK, follow_redirects=False)
 
     response = client.patch(ME, json={"name": "Maria Souza"})
 

@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, Depends, Response, status
 
-from src.api.authentication import CurrentUser, NewUserProfile, ProfileOwner
+from src.api.authentication import CurrentUser, NewUserProfile, ProfileOwner, get_current_user
 from src.api.cookies import start_session
 from src.api.dependencies import ProfileServiceDep, UserServiceDep
+from src.api.rate_limits import limit_cep_lookups
 from src.domain.enums import Role
 from src.domain.user_profile import UserProfile
 from src.models.user import User
@@ -17,6 +18,7 @@ router = APIRouter(prefix="/profiles", tags=["profiles"])
     response_model=Profile,
     summary="Finish the signup as a donor",
     description="The CEP must have known coordinates. Starts the session.",
+    dependencies=[Depends(limit_cep_lookups)],
 )
 def create_donor(
     data: NewDonor, profile: NewUserProfile, service: ProfileServiceDep, response: Response
@@ -49,7 +51,13 @@ def read_my_profile(owner: ProfileOwner) -> User | UserProfile:
     return owner
 
 
-@router.patch("/me", response_model=Profile, summary="Edit your own profile")
+@router.patch(
+    "/me",
+    response_model=Profile,
+    summary="Edit your own profile",
+    # The login is checked first, so the limiter cannot replace its 401.
+    dependencies=[Depends(get_current_user), Depends(limit_cep_lookups)],
+)
 def update_my_profile(
     changes: ProfileChanges, user: CurrentUser, service: ProfileServiceDep
 ) -> User:

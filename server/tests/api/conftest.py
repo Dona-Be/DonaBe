@@ -4,10 +4,16 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from src.api.dependencies import get_http_client
+from src.api.rate_limits import CEP_LOOKUPS_PER_ACCOUNT
 from src.models.user import Donor
 from tests.api.helpers import create_donor
 from tests.connectors.fakes import FakeApi
 from tests.connectors.samples import PAULISTA
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limits() -> None:
+    CEP_LOOKUPS_PER_ACCOUNT.reset()
 
 
 @pytest.fixture
