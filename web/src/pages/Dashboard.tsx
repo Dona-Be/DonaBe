@@ -1,9 +1,8 @@
-import { useState } from "react";
 import { logout } from "../api/auth";
 import { useAuth } from "../auth/useAuth";
-import { Button } from "../components/Button";
+import { SecondaryButton } from "../components/Button";
 import { ErrorMessage } from "../components/ErrorMessage";
-import { friendlyMessage } from "../errors";
+import { useAction } from "../hooks/useAction";
 import type { Role } from "../types/user";
 
 const roleLabels: Record<Role, string> = {
@@ -12,20 +11,10 @@ const roleLabels: Record<Role, string> = {
 };
 
 export function Dashboard() {
-  const { user, setUser } = useAuth();
-  const [loggingOut, setLoggingOut] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { user, role, setUser } = useAuth();
+  const { errorMessage, pending, run } = useAction();
 
-  if (!user) return null;
-
-  function handleLogout() {
-    setLoggingOut(true);
-    setErrorMessage(null);
-    logout()
-      .then(() => setUser(null))
-      .catch((error: unknown) => setErrorMessage(friendlyMessage(error)))
-      .finally(() => setLoggingOut(false));
-  }
+  if (!user || !role) return null;
 
   return (
     <section className="mx-auto max-w-md space-y-4 rounded border border-slate-200 bg-white p-6">
@@ -44,12 +33,15 @@ export function Dashboard() {
           <dt className="text-slate-500">E-mail</dt>
           <dd>{user.email}</dd>
           <dt className="mt-2 text-slate-500">Papel</dt>
-          <dd>{roleLabels[user.role]}</dd>
+          <dd>{roleLabels[role]}</dd>
         </dl>
       </div>
-      <Button disabled={loggingOut} onClick={handleLogout}>
+      <SecondaryButton
+        disabled={pending}
+        onClick={() => run(() => logout().then(() => setUser(null)))}
+      >
         Sair de todos os aparelhos
-      </Button>
+      </SecondaryButton>
       {errorMessage && <ErrorMessage message={errorMessage} />}
     </section>
   );

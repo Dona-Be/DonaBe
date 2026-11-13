@@ -1,10 +1,11 @@
 import { createContext } from "react";
-import type { PublicUser } from "../types/user";
+import type { Profile, Role } from "../types/user";
 
 export interface AuthValue {
-  user: PublicUser | null;
+  user: Profile | null;
+  role: Role | null;
   loading: boolean;
-  setUser: (user: PublicUser | null) => void;
+  setUser: (user: Profile | null) => void;
 }
 
 export const AuthContext = createContext<AuthValue | null>(null);
