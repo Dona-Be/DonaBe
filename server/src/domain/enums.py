@@ -41,10 +41,17 @@ class NeedStatus(StrEnum):
 class DonationIntentStatus(StrEnum):
     REGISTERED = "registered"
     IN_CONTACT = "in_contact"
-    COMPLETED = "completed"
+    DELIVERY_SCHEDULED = "delivery_scheduled"
+    DELIVERED = "delivered"
+    RECEIVED = "received"
     CANCELLED = "cancelled"
 
 
 ACTIVE_INTENT_STATUSES = frozenset(
-    {DonationIntentStatus.REGISTERED, DonationIntentStatus.IN_CONTACT}
+    {
+        DonationIntentStatus.REGISTERED,
+        DonationIntentStatus.IN_CONTACT,
+        DonationIntentStatus.DELIVERY_SCHEDULED,
+        DonationIntentStatus.DELIVERED,
+    }
 )

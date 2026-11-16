@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import DateTime, ForeignKey, Index, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.domain.enums import ACTIVE_INTENT_STATUSES, DonationIntentStatus
+from src.domain.enums import ACTIVE_INTENT_STATUSES, DonationIntentStatus, Role
 from src.models.base import Base, created_at_column, enum_type
 
 if TYPE_CHECKING:
@@ -30,19 +30,15 @@ class DonationIntent(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     need_id: Mapped[int] = mapped_column(ForeignKey("needs.id"), index=True)
-    donor_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), index=True)
+    donor_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     status: Mapped[DonationIntentStatus] = mapped_column(enum_type(DonationIntentStatus))
-    donor_name: Mapped[str | None]
-    donor_email: Mapped[str | None]
-    phone: Mapped[str | None]
     message: Mapped[str | None]
-    consented_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    data_retention_deadline: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), index=True
-    )
-    data_deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    scheduled_for: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    received_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    cancelled_by: Mapped[Role | None] = mapped_column(enum_type(Role))
     created_at: Mapped[datetime] = created_at_column()
 
     need: Mapped["Need"] = relationship(back_populates="donation_intents")
-    donor: Mapped["Donor | None"] = relationship()
+    donor: Mapped["Donor"] = relationship()
