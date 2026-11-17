@@ -18,7 +18,6 @@ def intent(db_session: Session, need: Need, donor: Donor) -> DonationIntent:
 
 
 def notification_fields(intent: DonationIntent) -> dict[str, object]:
-    # A new intent is news for the manager of the institution.
     return {
         "recipient": intent.need.institution.manager,
         "type": NotificationType.INTENT_REGISTERED,

@@ -16,8 +16,6 @@ NOTIFICATIONS_BY_RECIPIENT_INDEX = "ix_notifications_recipient_id_read_at"
 
 class Notification(Base):
     __tablename__ = "notifications"
-    # The recipient comes first, so the same index serves both all of a user's notifications and
-    # only the unread ones (read_at IS NULL).
     __table_args__ = (Index(NOTIFICATIONS_BY_RECIPIENT_INDEX, "recipient_id", "read_at"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
