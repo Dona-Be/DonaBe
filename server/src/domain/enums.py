@@ -55,3 +55,10 @@ ACTIVE_INTENT_STATUSES = frozenset(
         DonationIntentStatus.DELIVERED,
     }
 )
+
+
+class NotificationType(StrEnum):
+    INTENT_REGISTERED = "intent_registered"
+    INTENT_CANCELLED = "intent_cancelled"
+    INTENT_DELIVERED = "intent_delivered"
+    INTENT_STATUS_CHANGED = "intent_status_changed"
