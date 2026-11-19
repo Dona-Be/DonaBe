@@ -16,6 +16,7 @@ from src.domain.exceptions import (
     InvalidCepError,
     InvalidCnpjError,
     InvalidPhoneError,
+    InvalidTransitionError,
     RouteNotFoundError,
     UnsupportedLegalNatureError,
     UserAlreadyExistsError,
@@ -29,6 +30,7 @@ RETRY_AFTER_SECONDS = "60"
 HTTP_STATUS_BY_ERROR: dict[type[Exception], int] = {
     DomainError: status.HTTP_400_BAD_REQUEST,
     UserAlreadyExistsError: status.HTTP_409_CONFLICT,
+    InvalidTransitionError: status.HTTP_409_CONFLICT,
     InvalidCnpjError: status.HTTP_422_UNPROCESSABLE_CONTENT,
     UnsupportedLegalNatureError: status.HTTP_422_UNPROCESSABLE_CONTENT,
     InvalidCepError: status.HTTP_422_UNPROCESSABLE_CONTENT,

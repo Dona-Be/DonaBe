@@ -52,3 +52,8 @@ class RouteNotFoundError(DomainError):
 class FieldNotInProfileError(DomainError):
     def __init__(self, field: str) -> None:
         super().__init__(f"O campo {field} não faz parte do seu perfil.")
+
+
+class InvalidTransitionError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Não é possível fazer essa mudança de status na intenção de doação.")
