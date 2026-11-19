@@ -3,12 +3,7 @@ import { useAuth } from "../auth/useAuth";
 import { SecondaryButton } from "../components/Button";
 import { ErrorMessage } from "../components/ErrorMessage";
 import { useAction } from "../hooks/useAction";
-import type { Role } from "../types/user";
-
-const roleLabels: Record<Role, string> = {
-  donor: "Doador",
-  manager: "Gestor de instituição",
-};
+import { roleLabels } from "../roles";
 
 export function Dashboard() {
   const { user, role, setUser } = useAuth();
