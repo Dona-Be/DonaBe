@@ -33,6 +33,7 @@ class DonationIntent(Base):
     donor_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     status: Mapped[DonationIntentStatus] = mapped_column(enum_type(DonationIntentStatus))
     message: Mapped[str | None]
+    contacted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     scheduled_for: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     received_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

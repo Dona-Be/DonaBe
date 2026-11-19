@@ -8,6 +8,7 @@ from src.connectors.exceptions import ExternalServiceError, RateLimitedError
 from src.domain.exceptions import (
     CnpjNotFoundError,
     DomainError,
+    InvalidTransitionError,
     UnsupportedLegalNatureError,
     UserAlreadyExistsError,
 )
@@ -52,6 +53,10 @@ def test_an_unsupported_legal_nature_is_unprocessable() -> None:
     error = UnsupportedLegalNatureError("2062 - Sociedade Empresária Limitada")
 
     assert status_for(error) == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+
+def test_an_invalid_transition_is_a_conflict() -> None:
+    assert status_for(InvalidTransitionError()) == status.HTTP_409_CONFLICT
 
 
 def test_a_domain_error_without_its_own_status_is_a_bad_request() -> None:
