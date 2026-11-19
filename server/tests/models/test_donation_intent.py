@@ -51,5 +51,5 @@ def test_different_donors_can_each_have_an_active_intent_for_the_same_need(
 def test_an_intent_requires_a_donor(db_session: Session, need: Need) -> None:
     db_session.add(DonationIntent(need=need, status=DonationIntentStatus.REGISTERED))
 
-    with pytest.raises(IntegrityError, match="donor_id"):
+    with pytest.raises(IntegrityError, match='column "donor_id"'):
         db_session.commit()
