@@ -17,8 +17,7 @@ NEW_ACTIVE_INTENT_CONDITION = (
 
 
 def upgrade() -> None:
-    # Nothing creates donation intents yet, so the table is empty: donor_id becomes required
-    # without any anonymous rows to handle, and no row is left with the removed completed status.
+    # Nothing creates donation intents yet, so the table is empty.
     op.drop_index(
         op.f("ix_donation_intents_data_retention_deadline"), table_name="donation_intents"
     )
@@ -50,13 +49,12 @@ def upgrade() -> None:
         ),
     )
     op.alter_column("donation_intents", "donor_id", existing_type=sa.INTEGER(), nullable=False)
-    # Autogenerate does not compare index conditions, so the new active statuses are written by
-    # hand here.
+    # Autogenerate does not compare index conditions, so this is hand-written.
     replace_active_intent_index(NEW_ACTIVE_INTENT_CONDITION)
 
 
 def downgrade() -> None:
-    # Like the upgrade, this assumes an empty table: consented_at comes back as required.
+    # Assumes an empty table too: consented_at comes back as required.
     replace_active_intent_index(OLD_ACTIVE_INTENT_CONDITION)
     op.alter_column("donation_intents", "donor_id", existing_type=sa.INTEGER(), nullable=True)
     op.drop_column("donation_intents", "cancelled_by")
