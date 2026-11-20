@@ -80,6 +80,18 @@ def test_invalid_changes_are_rejected(donor_client: TestClient, changes: dict[st
     assert donor_client.get(ME).json() == DONOR_PROFILE
 
 
+@pytest.mark.parametrize(("phone", "kept"), [("", None), (None, "11999990000")])
+def test_only_an_empty_phone_removes_the_saved_one(
+    donor_client: TestClient, phone: str | None, kept: str | None
+) -> None:
+    donor_client.patch(ME, json={"phone": "(11) 99999-0000"})
+
+    response = donor_client.patch(ME, json={"phone": phone})
+
+    assert response.json() == {**DONOR_PROFILE, "phone": kept}
+    assert donor_client.get(ME).json() == {**DONOR_PROFILE, "phone": kept}
+
+
 def test_manager_edits_name_and_phone(client: TestClient) -> None:
     sign_up(client, "manager")
 

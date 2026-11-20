@@ -21,6 +21,10 @@ def test_an_invalid_phone_is_rejected() -> None:
         Donor(phone="(11) 9999-000")
 
 
+def test_an_empty_phone_means_no_phone() -> None:
+    assert Donor(phone="").phone is None
+
+
 @pytest.mark.parametrize("postal_code", ["01310-200", " 01310200 "])
 def test_the_postal_code_of_a_donor_keeps_only_the_digits(postal_code: str) -> None:
     assert Donor(postal_code=postal_code).postal_code == "01310200"

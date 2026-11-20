@@ -8,43 +8,26 @@ from tests.api.helpers import (
     PENDING_SIGNUP_COOKIE,
     cookies_set_by,
     create_donor,
+    sign_up,
     was_deleted,
 )
 from tests.fakes import USER_EMAIL
 
 
-def test_signup_creates_the_user_and_starts_the_session(client: TestClient) -> None:
-    client.get(GOOGLE_CALLBACK, follow_redirects=False)
+def test_signup_starts_the_session_and_ends_the_pending_signup(client: TestClient) -> None:
+    response = sign_up(client, "manager")
 
-    response = client.post("/api/auth/signup", json={"role": "manager"})
-
-    assert response.status_code == 201
-    assert response.json()["role"] == "manager"
     cookies = cookies_set_by(response)
     assert "HttpOnly" in cookies[ACCESS_TOKEN_COOKIE]
     assert was_deleted(cookies[PENDING_SIGNUP_COOKIE])
     assert client.get("/api/auth/me").json()["email"] == USER_EMAIL
 
 
-def test_signup_without_pending_signup_is_unauthorized(client: TestClient) -> None:
-    response = client.post("/api/auth/signup", json={"role": "donor"})
-
-    assert response.status_code == 401
-    assert response.json() == {"detail": "Nenhum cadastro pendente. Entre com o Google novamente."}
-    assert client.get("/api/auth/pending-signup").status_code == 401
-
-
-def test_signup_with_unknown_role_is_invalid(client: TestClient) -> None:
-    client.get(GOOGLE_CALLBACK, follow_redirects=False)
-
-    assert client.post("/api/auth/signup", json={"role": "boss"}).status_code == 422
-
-
 def test_signup_of_existing_email_conflicts(client: TestClient, db_session: Session) -> None:
     client.get(GOOGLE_CALLBACK, follow_redirects=False)
     create_donor(db_session)
 
-    response = client.post("/api/auth/signup", json={"role": "donor"})
+    response = client.post("/api/profiles/manager")
 
     assert response.status_code == 409
     assert response.json() == {

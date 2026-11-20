@@ -9,12 +9,13 @@ from tests.api.helpers import (
     GOOGLE_CALLBACK,
     LOGIN_FAILED_URL,
     LOGIN_URL,
+    PENDING_PROFILE,
     PENDING_SIGNUP_COOKIE,
     SITE_URL,
     cookies_set_by,
     was_deleted,
 )
-from tests.fakes import USER_EMAIL, USER_NAME, USER_PICTURE, FakeGoogleApp, google_token
+from tests.fakes import USER_EMAIL, USER_NAME, FakeGoogleApp, google_token
 
 
 def test_login_redirects_to_google_with_the_frontend_callback(client: TestClient) -> None:
@@ -55,11 +56,7 @@ def test_callback_of_new_user_starts_a_pending_signup(client: TestClient) -> Non
     cookies = cookies_set_by(response)
     assert "HttpOnly" in cookies[PENDING_SIGNUP_COOKIE]
     assert was_deleted(cookies[ACCESS_TOKEN_COOKIE])
-    assert client.get("/api/auth/pending-signup").json() == {
-        "email": USER_EMAIL,
-        "name": USER_NAME,
-        "picture_url": USER_PICTURE,
-    }
+    assert client.get("/api/profiles/me").json() == PENDING_PROFILE
     assert client.get("/api/auth/me").status_code == 401
 
 
@@ -70,8 +67,8 @@ def test_callback_lowercases_the_google_email(
 
     client.get(GOOGLE_CALLBACK, follow_redirects=False)
 
-    assert client.get("/api/auth/pending-signup").json()["email"] == USER_EMAIL
-    assert client.post("/api/auth/signup", json={"role": "donor"}).json()["email"] == USER_EMAIL
+    assert client.get("/api/profiles/me").json()["email"] == USER_EMAIL
+    assert client.post("/api/profiles/manager").json()["email"] == USER_EMAIL
 
 
 def test_callback_with_google_failure_goes_back_to_login_and_logs_the_cause(
