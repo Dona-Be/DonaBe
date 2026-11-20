@@ -30,7 +30,7 @@ export function DonorForm({ onBack }: Readonly<{ onBack: () => void }>) {
     <AuthLayout title="Local e Contato">
       <form onSubmit={handleSubmit} className="space-y-6">
         <PostalCodeField value={postalCode} onChange={setPostalCode} />
-        <PhoneField optional value={phone} onChange={setPhone} />
+        <PhoneField value={phone} onChange={setPhone} />
         <CausesField value={preferredCauses} onChange={setPreferredCauses} />
         {errorMessage && <ErrorMessage message={errorMessage} />}
         <div className="flex gap-3">

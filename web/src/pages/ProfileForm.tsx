@@ -38,8 +38,9 @@ export function ProfileForm({ user }: Readonly<{ user: Profile }>) {
       ? { postal_code: formatPostalCode(postalCode), preferred_causes: preferredCauses }
       : {};
     setSaved(false);
+    // An empty phone removes the saved one, while null would keep it.
     run(() =>
-      updateMyProfile({ name, phone: joinPhone(phone), ...donorChanges }).then((profile) => {
+      updateMyProfile({ name, phone: joinPhone(phone) ?? "", ...donorChanges }).then((profile) => {
         // A save answered after a logout must not log the user back in.
         setUser((current) => current && profile);
         setSaved(true);
@@ -60,7 +61,7 @@ export function ProfileForm({ user }: Readonly<{ user: Profile }>) {
           value={name}
           onChange={(event) => setName(event.target.value)}
         />
-        <PhoneField optional={!user.phone} value={phone} onChange={setPhone} />
+        <PhoneField value={phone} onChange={setPhone} />
       </Section>
       {isDonor && (
         <Section title="Localização e causas">

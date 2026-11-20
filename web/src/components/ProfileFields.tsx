@@ -27,10 +27,8 @@ export function PostalCodeField({ value, onChange }: Readonly<FieldProps<string>
   );
 }
 
-type PhoneFieldProps = Readonly<FieldProps<Phone> & { optional?: boolean }>;
-
-export function PhoneField({ value, onChange, optional }: PhoneFieldProps) {
-  const required = !optional || value.areaCode + value.number !== "";
+export function PhoneField({ value, onChange }: Readonly<FieldProps<Phone>>) {
+  const required = value.areaCode + value.number !== "";
   const tidy = () => onChange(tidyPhone(value));
 
   return (
@@ -48,7 +46,7 @@ export function PhoneField({ value, onChange, optional }: PhoneFieldProps) {
       />
       <TextField
         label="Telefone"
-        optional={optional}
+        optional
         required={required}
         hint="Só os números."
         inputMode="numeric"
