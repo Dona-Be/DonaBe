@@ -1,4 +1,5 @@
 import { causeLabels, causes, type Cause } from "../causes";
+import { formatPostalCode, tidyPhone, type Phone } from "../format";
 import { TextField } from "./TextField";
 
 interface FieldProps<Value> {
@@ -21,23 +22,42 @@ export function PostalCodeField({ value, onChange }: Readonly<FieldProps<string>
       autoComplete="postal-code"
       value={value}
       onChange={(event) => onChange(event.target.value)}
+      onBlur={() => onChange(formatPostalCode(value))}
     />
   );
 }
 
-type PhoneFieldProps = Readonly<FieldProps<string> & { optional?: boolean }>;
+type PhoneFieldProps = Readonly<FieldProps<Phone> & { optional?: boolean }>;
 
 export function PhoneField({ value, onChange, optional }: PhoneFieldProps) {
+  const required = !optional || value.areaCode + value.number !== "";
+  const tidy = () => onChange(tidyPhone(value));
+
   return (
-    <TextField
-      label="Telefone"
-      optional={optional}
-      hint="Com DDD, por exemplo (11) 99999-0000."
-      type="tel"
-      autoComplete="tel-national"
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-    />
+    <div className="grid grid-cols-[5rem_1fr] gap-3">
+      <TextField
+        label="DDD"
+        required={required}
+        pattern="\d{2}"
+        title="Dois dígitos"
+        inputMode="numeric"
+        autoComplete="tel-area-code"
+        value={value.areaCode}
+        onChange={(event) => onChange({ ...value, areaCode: event.target.value })}
+        onBlur={tidy}
+      />
+      <TextField
+        label="Telefone"
+        optional={optional}
+        required={required}
+        hint="Só os números."
+        inputMode="numeric"
+        autoComplete="tel-local"
+        value={value.number}
+        onChange={(event) => onChange({ ...value, number: event.target.value })}
+        onBlur={tidy}
+      />
+    </div>
   );
 }
 

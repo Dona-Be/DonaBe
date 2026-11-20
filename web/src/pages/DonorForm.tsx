@@ -6,20 +6,21 @@ import { AuthLayout } from "../components/AuthLayout";
 import { PrimaryButton, SecondaryButton } from "../components/Button";
 import { ErrorMessage } from "../components/ErrorMessage";
 import { CausesField, PhoneField, PostalCodeField } from "../components/ProfileFields";
+import { formatPostalCode, joinPhone, splitPhone } from "../format";
 import { useAction } from "../hooks/useAction";
 
 export function DonorForm({ onBack }: Readonly<{ onBack: () => void }>) {
   const { setUser } = useAuth();
   const { errorMessage, pending, run } = useAction();
   const [postalCode, setPostalCode] = useState("");
-  const [phone, setPhone] = useState("");
+  const [phone, setPhone] = useState(splitPhone(""));
   const [preferredCauses, setPreferredCauses] = useState<Cause[]>([]);
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const donor = {
-      postal_code: postalCode,
-      phone: phone || null,
+      postal_code: formatPostalCode(postalCode),
+      phone: joinPhone(phone),
       preferred_causes: preferredCauses,
     };
     run(() => createDonor(donor).then(setUser));
