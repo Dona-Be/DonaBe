@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { get, post } from "../src/api/client";
+import { get, patch, post } from "../src/api/client";
 import { FriendlyError } from "../src/errors";
 import { mockFetch, mockNetworkFailure } from "./helpers";
 
@@ -61,5 +61,16 @@ describe("post", () => {
     mockFetch({ "POST /api/resource": { status: 204 } });
 
     await expect(post("/resource")).resolves.toBeUndefined();
+  });
+});
+
+describe("patch", () => {
+  it("sends the changes as JSON with the PATCH method", async () => {
+    const fetchMock = mockFetch({ "PATCH /api/resource": { body: { id: 7 } } });
+
+    await expect(patch("/resource", { name: "Maria" })).resolves.toEqual({ id: 7 });
+    const request = fetchMock.mock.calls[0][1];
+    expect(request?.body).toBe('{"name":"Maria"}');
+    expect(new Headers(request?.headers).get("Content-Type")).toBe("application/json");
   });
 });

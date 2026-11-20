@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { vi } from "vitest";
@@ -22,6 +22,14 @@ export const USER: Profile = {
 };
 
 export const NEWCOMER: Profile = { ...USER, role: null, postal_code: null, preferred_causes: null };
+
+export const MANAGER: Profile = { ...NEWCOMER, role: "manager" };
+
+export const DONOR: Profile = {
+  ...USER,
+  picture_url: "https://lh3.googleusercontent.com/a/maria",
+  phone: "11999990000",
+};
 
 export const UNAUTHORIZED: FakeResponse = {
   status: 401,
@@ -84,4 +92,18 @@ export function renderApp(path: string) {
     </MemoryRouter>,
   );
   return userEvent.setup();
+}
+
+export function field(label: string): HTMLInputElement {
+  return screen.getByLabelText(label);
+}
+
+export async function openProfile(
+  profile: Profile,
+  responses: Parameters<typeof mockFetch>[0] = {},
+) {
+  const fetchMock = mockFetch({ "GET /api/profiles/me": { body: profile }, ...responses });
+  const user = renderApp("/perfil");
+  await screen.findByRole("heading", { name: "Meu perfil" });
+  return { user, fetchMock };
 }
