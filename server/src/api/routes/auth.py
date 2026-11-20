@@ -2,14 +2,14 @@ from fastapi import APIRouter, Request, Response, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import RedirectResponse
 
-from src.api.authentication import CurrentUser, CurrentUserIfAny, PendingSignupProfile
+from src.api.authentication import CurrentUser, CurrentUserIfAny
 from src.api.cookies import clear_session_cookies, start_pending_signup, start_session
 from src.api.dependencies import GoogleClientDep, UserServiceDep
 from src.api.frontend_paths import LOGIN_PATH
 from src.core.config import settings
 from src.domain.user_profile import UserProfile
 from src.models.user import User
-from src.schemas.user import PendingSignup, PublicUser, RoleChoice
+from src.schemas.user import PublicUser
 from src.services.users import UserService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -59,26 +59,6 @@ async def google_callback(
     profile = await google.fetch_profile(request)
     # The database work is synchronous, so keep it off the event loop.
     return await run_in_threadpool(decide_login_destination, service, profile)
-
-
-@router.get("/pending-signup", response_model=PendingSignup, summary="Read the pending signup")
-def read_pending_signup(profile: PendingSignupProfile) -> UserProfile:
-    return profile
-
-
-@router.post(
-    "/signup",
-    status_code=status.HTTP_201_CREATED,
-    response_model=PublicUser,
-    summary="Finish the signup by choosing a role",
-    description="Creates the user as donor or manager and starts the session.",
-)
-def sign_up(
-    choice: RoleChoice, profile: PendingSignupProfile, service: UserServiceDep, response: Response
-) -> User:
-    user = service.sign_up(profile, choice.role)
-    start_session(response, user)
-    return user
 
 
 @router.get("/me", response_model=PublicUser, summary="Read the current user")

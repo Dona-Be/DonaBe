@@ -45,16 +45,13 @@ def get_current_user(user: CurrentUserIfAny) -> User:
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
-def get_pending_signup_profile(token: PendingSignupCookie = None) -> UserProfile:
+def get_pending_signup_profile(token: str | None) -> UserProfile:
     if token is None:
         raise unauthorized(NO_PENDING_SIGNUP_MESSAGE)
     profile = read_pending_signup_token(token)
     if profile is None:
         raise unauthorized(NO_PENDING_SIGNUP_MESSAGE)
     return profile
-
-
-PendingSignupProfile = Annotated[UserProfile, Depends(get_pending_signup_profile)]
 
 
 def get_current_donor(user: CurrentUser) -> Donor:
