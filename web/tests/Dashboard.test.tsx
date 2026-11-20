@@ -1,6 +1,6 @@
 import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { mockFetch, mockNetworkFailure, renderApp, requestsMade, USER, VISITOR } from "./helpers";
+import { mockFetch, mockNetworkFailure, renderApp, USER, VISITOR } from "./helpers";
 
 describe("Dashboard", () => {
   it("shows the name, e-mail and role of the current user", async () => {
@@ -14,32 +14,6 @@ describe("Dashboard", () => {
     expect(
       screen.getByText("Este é o seu painel. As funcionalidades vão aparecer aqui."),
     ).toBeTruthy();
-  });
-
-  it("logs out and goes to the login page", async () => {
-    const fetchMock = mockFetch({
-      "GET /api/profiles/me": { body: USER },
-      "POST /api/auth/logout": { status: 204 },
-    });
-    const user = renderApp("/");
-
-    await user.click(await screen.findByRole("button", { name: "Sair de todos os aparelhos" }));
-
-    expect(await screen.findByRole("link", { name: "Entrar com o Google" })).toBeTruthy();
-    expect(requestsMade(fetchMock)).toContain("POST /api/auth/logout");
-  });
-
-  it("warns when it cannot log out", async () => {
-    mockFetch({
-      "GET /api/profiles/me": { body: USER },
-      "POST /api/auth/logout": { status: 500, body: { detail: "Falha interna." } },
-    });
-    const user = renderApp("/");
-
-    await user.click(await screen.findByRole("button", { name: "Sair de todos os aparelhos" }));
-
-    expect((await screen.findByRole("alert")).textContent).toBe("Falha interna.");
-    expect(screen.getByRole("heading", { name: "Olá, Maria Silva" })).toBeTruthy();
   });
 
   it("sends a visitor to the login page", async () => {

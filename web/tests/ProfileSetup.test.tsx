@@ -1,8 +1,6 @@
 import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { mockFetch, NEWCOMER, NEWCOMER_SESSION, renderApp, requestsMade } from "./helpers";
-
-const MANAGER = { ...NEWCOMER, role: "manager" };
+import { MANAGER, mockFetch, NEWCOMER_SESSION, renderApp, requestsMade } from "./helpers";
 
 function radio(name: string): HTMLInputElement {
   return screen.getByRole("radio", { name });

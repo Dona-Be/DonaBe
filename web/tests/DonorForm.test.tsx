@@ -2,6 +2,7 @@ import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
   bodySent,
+  field,
   mockFetch,
   NEWCOMER_SESSION,
   renderApp,
@@ -32,8 +33,9 @@ describe("DonorForm", () => {
   it("sends the CEP, the phone and the chosen causes, then opens the dashboard", async () => {
     const { user, fetchMock } = await openDonorForm({ [SIGNUP]: { status: 201, body: USER } });
 
-    await user.type(screen.getByLabelText("CEP"), "01310-200");
-    await user.type(screen.getByLabelText("Telefone (opcional)"), "(11) 99999-0000");
+    await user.type(screen.getByLabelText("CEP"), "01310200");
+    await user.type(screen.getByLabelText("Telefone (opcional)"), "99999 0000");
+    await user.type(screen.getByLabelText("DDD"), "(11)");
     await user.click(screen.getByRole("checkbox", { name: "Animais" }));
     await user.click(screen.getByRole("checkbox", { name: "Saúde" }));
     await user.click(screen.getByRole("button", { name: "Concluir cadastro" }));
@@ -41,7 +43,7 @@ describe("DonorForm", () => {
     expect(await screen.findByRole("heading", { name: "Olá, Maria Silva" })).toBeTruthy();
     expect(bodySent(fetchMock, SIGNUP)).toEqual({
       postal_code: "01310-200",
-      phone: "(11) 99999-0000",
+      phone: "11999990000",
       preferred_causes: ["animals", "health"],
     });
   });
@@ -49,15 +51,14 @@ describe("DonorForm", () => {
   it("sends no phone when it is left empty and drops a cause that was unchecked", async () => {
     const { user, fetchMock } = await openDonorForm({ [SIGNUP]: { status: 201, body: USER } });
 
-    await user.type(screen.getByLabelText("CEP"), "01310200");
     await user.click(screen.getByRole("checkbox", { name: "Idosos" }));
     await user.click(screen.getByRole("checkbox", { name: "Educação" }));
     await user.click(screen.getByRole("checkbox", { name: "Idosos" }));
-    await user.click(screen.getByRole("button", { name: "Concluir cadastro" }));
+    await user.type(screen.getByLabelText("CEP"), "01.310-200{Enter}");
 
     await screen.findByRole("heading", { name: "Olá, Maria Silva" });
     expect(bodySent(fetchMock, SIGNUP)).toEqual({
-      postal_code: "01310200",
+      postal_code: "01310-200",
       phone: null,
       preferred_causes: ["education"],
     });
@@ -66,6 +67,33 @@ describe("DonorForm", () => {
   it("does not send the form without a CEP", async () => {
     const { user, fetchMock } = await openDonorForm();
 
+    await user.click(screen.getByRole("button", { name: "Concluir cadastro" }));
+
+    expect(requestsMade(fetchMock)).not.toContain(SIGNUP);
+  });
+
+  it("formats the CEP and moves the DDD of a whole phone when leaving the fields", async () => {
+    const { user } = await openDonorForm();
+
+    await user.type(field("CEP"), "01310200");
+    await user.type(field("Telefone (opcional)"), "(91) 98888-7777");
+    await user.tab();
+
+    expect(field("CEP").value).toBe("01310-200");
+    expect(field("DDD").value).toBe("91");
+    expect(field("Telefone (opcional)").value).toBe("98888-7777");
+  });
+
+  it.each([
+    ["1", "999990000"],
+    ["11", ""],
+    ["", "999990000"],
+  ])("does not send a phone with the DDD '%s' and the number '%s'", async (areaCode, number) => {
+    const { user, fetchMock } = await openDonorForm();
+
+    await user.type(field("CEP"), "01310200");
+    await user.type(field("DDD"), areaCode || "{Tab}");
+    await user.type(field("Telefone (opcional)"), number || "{Tab}");
     await user.click(screen.getByRole("button", { name: "Concluir cadastro" }));
 
     expect(requestsMade(fetchMock)).not.toContain(SIGNUP);

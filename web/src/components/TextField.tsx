@@ -1,6 +1,6 @@
 import { useId, type ComponentProps } from "react";
 
-interface TextFieldProps extends Omit<ComponentProps<"input">, "className" | "id" | "required"> {
+interface TextFieldProps extends Omit<ComponentProps<"input">, "className" | "id"> {
   label: string;
   optional?: boolean;
   hint?: string;
@@ -21,9 +21,9 @@ export function TextField({ label, optional, hint, ...inputProps }: Readonly<Tex
         {optional && <span className="font-normal"> (opcional)</span>}
       </label>
       <input
+        required={!optional}
         {...inputProps}
         id={id}
-        required={!optional}
         aria-describedby={hint ? hintId : undefined}
         className={INPUT_CLASS}
       />
