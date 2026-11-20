@@ -1,13 +1,8 @@
-import { logout } from "../api/auth";
 import { useAuth } from "../auth/useAuth";
-import { SecondaryButton } from "../components/Button";
-import { ErrorMessage } from "../components/ErrorMessage";
-import { useAction } from "../hooks/useAction";
 import { roleLabels } from "../roles";
 
 export function Dashboard() {
-  const { user, role, setUser } = useAuth();
-  const { errorMessage, pending, run } = useAction();
+  const { user, role } = useAuth();
 
   if (!user || !role) return null;
 
@@ -31,13 +26,6 @@ export function Dashboard() {
           <dd>{roleLabels[role]}</dd>
         </dl>
       </div>
-      <SecondaryButton
-        disabled={pending}
-        onClick={() => run(() => logout().then(() => setUser(null)))}
-      >
-        Sair de todos os aparelhos
-      </SecondaryButton>
-      {errorMessage && <ErrorMessage message={errorMessage} />}
     </section>
   );
 }
