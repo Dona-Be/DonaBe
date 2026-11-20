@@ -4,6 +4,7 @@ import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { Layout } from "./components/Layout";
 import { Dashboard } from "./pages/Dashboard";
 import { Login } from "./pages/Login";
+import { MyProfile } from "./pages/MyProfile";
 import { routes } from "./routes";
 
 export function App() {
@@ -12,6 +13,7 @@ export function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
           <Route path={routes.dashboard} element={<Dashboard />} />
+          <Route path={routes.profile} element={<MyProfile />} />
         </Route>
       </Route>
       <Route element={<GuestRoute />}>

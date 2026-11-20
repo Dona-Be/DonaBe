@@ -35,12 +35,20 @@ export function get<T>(path: string): Promise<T> {
   return request<T>(path, { method: "GET" });
 }
 
-export function post<T>(path: string, body?: unknown): Promise<T> {
-  if (body === undefined) return request<T>(path, { method: "POST" });
+function send<T>(method: string, path: string, body?: unknown): Promise<T> {
+  if (body === undefined) return request<T>(path, { method });
 
   return request<T>(path, {
-    method: "POST",
+    method,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+}
+
+export function post<T>(path: string, body?: unknown): Promise<T> {
+  return send<T>("POST", path, body);
+}
+
+export function patch<T>(path: string, body: unknown): Promise<T> {
+  return send<T>("PATCH", path, body);
 }
