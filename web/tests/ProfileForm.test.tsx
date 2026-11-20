@@ -30,7 +30,7 @@ describe("ProfileForm", () => {
 
     expect(field("Nome completo").value).toBe("Maria Silva");
     expect(field("DDD").value).toBe("11");
-    expect(field("Telefone").value).toBe("99999-0000");
+    expect(field("Telefone (opcional)").value).toBe("99999-0000");
     expect(field("CEP").value).toBe("01310-200");
     expect(field("Animais").checked).toBe(true);
     expect(field("Idosos").checked).toBe(false);
@@ -42,7 +42,7 @@ describe("ProfileForm", () => {
 
     await retype(user, "Nome completo", "Maria Souza");
     await retype(user, "DDD", "21");
-    await retype(user, "Telefone", "20000000");
+    await retype(user, "Telefone (opcional)", "20000000");
     await user.click(field("Saúde"));
     await user.click(field("Idosos"));
     await retype(user, "CEP", "69945000{Enter}");
@@ -66,21 +66,18 @@ describe("ProfileForm", () => {
     await save(user);
 
     await screen.findByRole("status");
-    expect(bodySent(fetchMock, SAVE)).toEqual({ name: "Ana Lima", phone: null });
+    expect(bodySent(fetchMock, SAVE)).toEqual({ name: "Ana Lima", phone: "" });
   });
 
-  it("requires the phone only after one was saved", async () => {
-    const { user } = await openProfile({ ...DONOR, phone: null }, SAVED);
+  it("removes the saved phone when its two fields are cleared", async () => {
+    const { user, fetchMock } = await openProfile(DONOR, SAVED);
 
-    expect(field("DDD").required).toBe(false);
-    expect(field("Telefone (opcional)").required).toBe(false);
-    await user.type(field("DDD"), "11");
-    await user.type(field("Telefone (opcional)"), "999990000");
+    await user.clear(field("DDD"));
+    await user.clear(field("Telefone (opcional)"));
     await save(user);
 
     await screen.findByRole("status");
-    expect(field("DDD").required).toBe(true);
-    expect(field("Telefone").required).toBe(true);
+    expect(bodySent(fetchMock, SAVE)).toMatchObject({ phone: "" });
   });
 
   it("hides the confirmation when a field changes after the save", async () => {
@@ -96,7 +93,7 @@ describe("ProfileForm", () => {
   it("replaces the confirmation with the refusal reason and keeps what was typed", async () => {
     const detail = "O telefone informado é inválido.";
     const { user } = await openProfile(DONOR, SAVED);
-    await retype(user, "Telefone", "9999000");
+    await retype(user, "Telefone (opcional)", "9999000");
     await save(user);
     await screen.findByRole("status");
     mockFetch({ [SAVE]: { status: 422, body: { detail } } });
@@ -105,7 +102,7 @@ describe("ProfileForm", () => {
 
     expect((await screen.findByRole("alert")).textContent).toBe(detail);
     expect(screen.queryByRole("status")).toBeNull();
-    expect(field("Telefone").value).toBe("9999000");
+    expect(field("Telefone (opcional)").value).toBe("9999000");
   });
 
   it("does not send the form without a name", async () => {
