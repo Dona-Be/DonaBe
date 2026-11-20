@@ -55,6 +55,7 @@ def read_my_profile(owner: ProfileOwner) -> User | UserProfile:
     "/me",
     response_model=Profile,
     summary="Edit your own profile",
+    description="Fields left out or null are kept. An empty phone removes the saved one.",
     # The login is checked first, so the limiter cannot replace its 401.
     dependencies=[Depends(get_current_user), Depends(limit_cep_lookups)],
 )

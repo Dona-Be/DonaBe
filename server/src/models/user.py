@@ -38,7 +38,8 @@ class User(Base):
 
     @validates("phone")
     def _keep_only_phone_digits(self, _key: str, phone: str | None) -> str | None:
-        if phone is None:
+        # An empty phone means none: a PATCH uses it to remove the saved one.
+        if not phone:
             return None
         return validate_cellphone_or_landline(phone)
 
