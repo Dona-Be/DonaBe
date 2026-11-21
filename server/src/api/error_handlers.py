@@ -26,6 +26,7 @@ from src.domain.exceptions import (
     NotificationNotFoundError,
     NotInstitutionManagerError,
     RouteNotFoundError,
+    UnknownSearchStrategyError,
     UnsupportedLegalNatureError,
     UserAlreadyExistsError,
 )
@@ -50,6 +51,7 @@ HTTP_STATUS_BY_ERROR: dict[type[Exception], int] = {
     FieldNotInProfileError: status.HTTP_422_UNPROCESSABLE_CONTENT,
     InactiveCnpjError: status.HTTP_422_UNPROCESSABLE_CONTENT,
     IncompleteAddressError: status.HTTP_422_UNPROCESSABLE_CONTENT,
+    UnknownSearchStrategyError: status.HTTP_422_UNPROCESSABLE_CONTENT,
     CnpjNotFoundError: status.HTTP_404_NOT_FOUND,
     CepNotFoundError: status.HTTP_404_NOT_FOUND,
     RouteNotFoundError: status.HTTP_404_NOT_FOUND,

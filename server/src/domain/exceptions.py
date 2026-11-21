@@ -87,3 +87,8 @@ class InstitutionNotFoundError(DomainError):
 class NotInstitutionManagerError(DomainError):
     def __init__(self) -> None:
         super().__init__("Apenas o gestor da instituição pode editá-la.")
+
+
+class UnknownSearchStrategyError(DomainError):
+    def __init__(self, *names: str) -> None:
+        super().__init__(f"Forma de busca inválida. Use uma destas: {', '.join(names)}.")
