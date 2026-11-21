@@ -5,21 +5,25 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from src.api.dependencies import get_http_client
-from src.api.rate_limits import CEP_LOOKUPS_PER_ACCOUNT
+from src.api.dependencies import get_address_lookup, get_company_lookup, get_http_client
+from src.api.rate_limits import CEP_LOOKUPS_PER_ACCOUNT, CNPJ_LOOKUPS_PER_ACCOUNT
+from src.connectors.addresses import address_from
+from src.connectors.companies import company_from
 from src.domain.enums import NotificationType
 from src.models.donation_intent import DonationIntent
 from src.models.notification import Notification
 from src.models.user import Donor, Manager, User
-from tests.api.helpers import NOTIFICATION_MESSAGE, Notify, create_donor
+from tests.api.helpers import NOTIFICATION_MESSAGE, Notify, create_donor, sign_up
 from tests.connectors.fakes import FakeApi
-from tests.connectors.samples import PAULISTA
+from tests.connectors.samples import AACD, AACD_TAX_ID, PAULISTA
+from tests.fakes import FakeAddressLookup, FakeCompanyLookup
 from tests.models.helpers import register_intent, save_need
 
 
 @pytest.fixture(autouse=True)
 def reset_rate_limits() -> None:
     CEP_LOOKUPS_PER_ACCOUNT.reset()
+    CNPJ_LOOKUPS_PER_ACCOUNT.reset()
 
 
 @pytest.fixture
@@ -32,6 +36,28 @@ def brasilapi(client: TestClient, fake_api: FakeApi) -> FakeApi:
     fake_api.response = httpx2.Response(200, json=PAULISTA)
     client.app.dependency_overrides[get_http_client] = fake_api.client
     return fake_api
+
+
+@pytest.fixture
+def companies(client: TestClient) -> FakeCompanyLookup:
+    fake = FakeCompanyLookup(company_from(AACD_TAX_ID, AACD))
+    client.app.dependency_overrides[get_company_lookup] = lambda: fake
+    return fake
+
+
+@pytest.fixture
+def addresses(client: TestClient) -> FakeAddressLookup:
+    fake = FakeAddressLookup(address_from(PAULISTA))
+    client.app.dependency_overrides[get_address_lookup] = lambda: fake
+    return fake
+
+
+@pytest.fixture
+def manager_client(
+    client: TestClient, companies: FakeCompanyLookup, addresses: FakeAddressLookup
+) -> TestClient:
+    sign_up(client, "manager")
+    return client
 
 
 @pytest.fixture

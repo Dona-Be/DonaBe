@@ -4,6 +4,7 @@ from src.connectors.addresses import AddressLookup
 from src.connectors.routing import RoutePlanner
 from src.connectors.schemas import Address, Coordinates, Route
 from src.domain.exceptions import CepNotFoundError, CepWithoutCoordinatesError, InvalidCepError
+from src.models.institution import WGS84_SRID
 from src.services.locations import LocationService
 from tests.fakes import FakeAddressLookup
 
@@ -64,6 +65,14 @@ def test_locate_propagates_a_cep_that_was_not_found() -> None:
 
     with pytest.raises(CepNotFoundError):
         service.locate("01001000")
+
+
+def test_point_of_is_the_geography_point_of_the_cep() -> None:
+    service, _ = service_with(SE_ADDRESS)
+
+    point = service.point_of("01001-000")
+
+    assert (point.desc, point.srid) == ("POINT(-46.633081 -23.5503898)", WGS84_SRID)
 
 
 def test_route_between_asks_the_route_planner() -> None:

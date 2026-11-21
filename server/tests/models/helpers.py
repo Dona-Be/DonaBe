@@ -22,8 +22,8 @@ def save_donor(db_session: Session, email: str = USER_EMAIL) -> Donor:
     return donor
 
 
-def save_need(db_session: Session) -> Need:
-    institution = Association(
+def new_institution(manager: Manager) -> Association:
+    return Association(
         cnpj="11222333000181",
         legal_name="Associação Amigos dos Animais",
         street="Avenida Paulista",
@@ -35,10 +35,13 @@ def save_need(db_session: Session) -> Need:
         verdict=Verdict.LIKELY_CHARITY,
         reasons=[],
         cnpj_data={},
-        manager=Manager.from_profile(profile(MANAGER_EMAIL)),
+        manager=manager,
     )
+
+
+def save_need(db_session: Session) -> Need:
     need = Need(
-        institution=institution,
+        institution=new_institution(Manager.from_profile(profile(MANAGER_EMAIL))),
         title="Ração",
         description="Ração para cães adultos",
         status=NeedStatus.OPEN,
