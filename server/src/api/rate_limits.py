@@ -4,7 +4,7 @@ from collections import Counter
 
 from fastapi import HTTPException, status
 
-from src.api.authentication import ProfileOwner
+from src.api.authentication import CurrentManager, ProfileOwner
 
 TOO_MANY_ATTEMPTS_MESSAGE = "Muitas tentativas. Tente novamente mais tarde."
 
@@ -34,8 +34,14 @@ class RateLimiter:
 
 # Kept in memory, which is enough while the API runs as a single process.
 CEP_LOOKUPS_PER_ACCOUNT = RateLimiter(max_attempts=20, window_seconds=60 * 60)
+CNPJ_LOOKUPS_PER_ACCOUNT = RateLimiter(max_attempts=20, window_seconds=60 * 60)
 
 
 def limit_cep_lookups(owner: ProfileOwner) -> None:
     if not CEP_LOOKUPS_PER_ACCOUNT.count_attempt(owner.email):
+        raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, TOO_MANY_ATTEMPTS_MESSAGE)
+
+
+def limit_cnpj_lookups(manager: CurrentManager) -> None:
+    if not CNPJ_LOOKUPS_PER_ACCOUNT.count_attempt(manager.email):
         raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, TOO_MANY_ATTEMPTS_MESSAGE)

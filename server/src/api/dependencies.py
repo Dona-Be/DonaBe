@@ -11,9 +11,11 @@ from src.connectors.companies import CnpjaCompanyLookup, CompanyLookup
 from src.connectors.json_api import http_client
 from src.connectors.routing import OsrmRoutePlanner, RoutePlanner
 from src.core.database import engine
+from src.repositories.institutions import InstitutionRepository, SqlAlchemyInstitutionRepository
 from src.repositories.notifications import NotificationRepository, SqlAlchemyNotificationRepository
 from src.repositories.users import SqlAlchemyUserRepository, UserRepository
 from src.services.cnpj import CnpjService
+from src.services.institutions import InstitutionService
 from src.services.intent_events import (
     DonorNotificationObserver,
     IntentEventPublisher,
@@ -97,6 +99,23 @@ def get_profile_service(
 
 
 ProfileServiceDep = Annotated[ProfileService, Depends(get_profile_service)]
+
+
+def get_institution_repository(
+    session: Annotated[Session, Depends(get_db_session)],
+) -> InstitutionRepository:
+    return SqlAlchemyInstitutionRepository(session)
+
+
+def get_institution_service(
+    repository: Annotated[InstitutionRepository, Depends(get_institution_repository)],
+    cnpj: CnpjServiceDep,
+    locations: LocationServiceDep,
+) -> InstitutionService:
+    return InstitutionService(repository, cnpj, locations)
+
+
+InstitutionServiceDep = Annotated[InstitutionService, Depends(get_institution_service)]
 
 
 def get_notification_repository(

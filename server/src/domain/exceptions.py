@@ -62,3 +62,28 @@ class InvalidTransitionError(DomainError):
 class NotificationNotFoundError(DomainError):
     def __init__(self) -> None:
         super().__init__("Notificação não encontrada.")
+
+
+class InstitutionAlreadyExistsError(DomainError):
+    def __init__(self, cnpj: str) -> None:
+        super().__init__(f"Já existe uma instituição cadastrada com o CNPJ {cnpj}.")
+
+
+class InactiveCnpjError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Não é possível cadastrar um CNPJ que não está ativo.")
+
+
+class IncompleteAddressError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("O endereço do CNPJ está incompleto. Informe rua, número, bairro e CEP.")
+
+
+class InstitutionNotFoundError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Instituição não encontrada.")
+
+
+class NotInstitutionManagerError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Apenas o gestor da instituição pode editá-la.")
