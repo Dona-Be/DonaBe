@@ -1,9 +1,11 @@
 import json
+from typing import Annotated
 
 import pytest
-from fastapi import Request, status
+from fastapi import Body, FastAPI, Request, status
+from fastapi.testclient import TestClient
 
-from src.api.error_handlers import respond_with_error, status_for
+from src.api.error_handlers import register_error_handlers, respond_with_error, status_for
 from src.connectors.exceptions import ExternalServiceError, RateLimitedError
 from src.domain.exceptions import (
     CnpjNotFoundError,
@@ -122,3 +124,23 @@ def test_a_rate_limit_asks_the_client_to_retry_later() -> None:
     assert response.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
     assert response.headers["retry-after"] == "60"
     assert body_of(response.body)["detail"].startswith("O limite de consultas")
+
+
+@pytest.mark.parametrize(
+    "body", [b'{"name": "\\ud800"}', b'{"name": NaN}'], ids=["lone surrogate", "NaN"]
+)
+def test_a_body_that_cannot_be_echoed_back_is_still_unprocessable(body: bytes) -> None:
+    app = FastAPI()
+    register_error_handlers(app)
+
+    @app.post("/names")
+    def read_name(name: Annotated[str, Body(embed=True, max_length=100)]) -> str:
+        return name
+
+    client = TestClient(app)
+    response = client.post("/names", content=body, headers={"content-type": "application/json"})
+    wrong_type = client.post("/names", json={"name": 1})
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    assert response.json() == {"detail": "Os dados enviados contêm valores inválidos."}
+    assert wrong_type.json()["detail"][0]["type"] == "string_type"
