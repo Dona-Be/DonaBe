@@ -1,8 +1,11 @@
+from geoalchemy2 import WKTElement
+
 from src.connectors.addresses import AddressLookup
 from src.connectors.routing import RoutePlanner
 from src.connectors.schemas import Address, Coordinates, Route
 from src.domain.cep import normalize_cep
 from src.domain.exceptions import CepWithoutCoordinatesError
+from src.models.institution import WGS84_SRID
 
 METERS_PER_KM = 1000
 
@@ -18,6 +21,10 @@ class LocationService:
         if address.coordinates is None:
             raise CepWithoutCoordinatesError(digits)
         return address
+
+    def point_of(self, cep: str) -> WKTElement:
+        coordinates = self.locate(cep).coordinates
+        return WKTElement(f"POINT({coordinates.longitude} {coordinates.latitude})", srid=WGS84_SRID)
 
     def route_between(self, origin: Coordinates, destination: Coordinates) -> Route:
         return self._routes.get_route(origin, destination)
