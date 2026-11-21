@@ -1,8 +1,9 @@
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 from src.domain.enums import Cause, InstitutionType, Verdict
+from src.schemas.text import StrictText
 
 MAX_TEXT_LENGTH = 200
 MAX_DESCRIPTION_LENGTH = 2000
@@ -16,7 +17,7 @@ Email = Annotated[str, Field(pattern=EMAIL_OR_EMPTY, max_length=MAX_TEXT_LENGTH)
 Link = Annotated[str, Field(pattern=LINK_OR_EMPTY, max_length=MAX_TEXT_LENGTH)]
 
 
-class InstitutionChanges(BaseModel):
+class InstitutionChanges(StrictText):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     trade_name: Text | None = None
@@ -34,14 +35,6 @@ class InstitutionChanges(BaseModel):
     city: NonBlankText | None = None
     state: str | None = Field(default=None, pattern=STATE_FORMAT)
     postal_code: str | None = None
-
-    @field_validator("*", mode="before")
-    @classmethod
-    def reject_nul(cls, value: object) -> object:
-        # PostgreSQL refuses a NUL in a text, which would turn into a 500.
-        if isinstance(value, str) and "\x00" in value:
-            raise ValueError("must not contain the NUL character")
-        return value
 
 
 class NewInstitution(InstitutionChanges):

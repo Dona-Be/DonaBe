@@ -1,6 +1,8 @@
 import logging
 
 from fastapi import FastAPI, Request, status
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from src.api.frontend_paths import LOGIN_FAILED_PATH
@@ -32,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 MAX_LOGGED_LENGTH = 200
 RETRY_AFTER_SECONDS = "60"
+INVALID_VALUES_MESSAGE = "Os dados enviados contêm valores inválidos."
 
 HTTP_STATUS_BY_ERROR: dict[type[Exception], int] = {
     DomainError: status.HTTP_400_BAD_REQUEST,
@@ -98,7 +101,21 @@ def redirect_to_login_with_error(request: Request, error: Exception) -> Redirect
     return RedirectResponse(settings.frontend_page(LOGIN_FAILED_PATH))
 
 
+async def respond_to_invalid_request(
+    request: Request, error: RequestValidationError
+) -> JSONResponse:
+    try:
+        return await request_validation_exception_handler(request, error)
+    except ValueError:
+        # The echoed input cannot be rendered: a lone surrogate or a NaN.
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            content={"detail": INVALID_VALUES_MESSAGE},
+        )
+
+
 def register_error_handlers(app: FastAPI) -> None:
     for error_type in HTTP_STATUS_BY_ERROR:
         app.add_exception_handler(error_type, respond_with_error)
     app.add_exception_handler(GoogleLoginError, redirect_to_login_with_error)
+    app.add_exception_handler(RequestValidationError, respond_to_invalid_request)
