@@ -17,6 +17,7 @@ from src.domain.exceptions import (
     InvalidCnpjError,
     InvalidPhoneError,
     InvalidTransitionError,
+    NotificationNotFoundError,
     RouteNotFoundError,
     UnsupportedLegalNatureError,
     UserAlreadyExistsError,
@@ -40,6 +41,7 @@ HTTP_STATUS_BY_ERROR: dict[type[Exception], int] = {
     CnpjNotFoundError: status.HTTP_404_NOT_FOUND,
     CepNotFoundError: status.HTTP_404_NOT_FOUND,
     RouteNotFoundError: status.HTTP_404_NOT_FOUND,
+    NotificationNotFoundError: status.HTTP_404_NOT_FOUND,
     ExternalServiceError: status.HTTP_503_SERVICE_UNAVAILABLE,
 }
 

@@ -57,3 +57,8 @@ class FieldNotInProfileError(DomainError):
 class InvalidTransitionError(DomainError):
     def __init__(self) -> None:
         super().__init__("Não é possível fazer essa mudança de status na intenção de doação.")
+
+
+class NotificationNotFoundError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Notificação não encontrada.")

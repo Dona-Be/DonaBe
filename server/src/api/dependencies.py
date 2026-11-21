@@ -20,6 +20,7 @@ from src.services.intent_events import (
     ManagerNotificationObserver,
 )
 from src.services.locations import LocationService
+from src.services.notifications import NotificationService
 from src.services.profiles import ProfileService
 from src.services.users import UserService
 
@@ -102,6 +103,15 @@ def get_notification_repository(
     session: Annotated[Session, Depends(get_db_session)],
 ) -> NotificationRepository:
     return SqlAlchemyNotificationRepository(session)
+
+
+def get_notification_service(
+    repository: Annotated[NotificationRepository, Depends(get_notification_repository)],
+) -> NotificationService:
+    return NotificationService(repository)
+
+
+NotificationServiceDep = Annotated[NotificationService, Depends(get_notification_service)]
 
 
 def get_intent_event_publisher(
