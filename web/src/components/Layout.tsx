@@ -7,7 +7,7 @@ import { ErrorMessage } from "./ErrorMessage";
 import { Logo } from "./Logo";
 
 export function Layout() {
-  const { setUser } = useAuth();
+  const { role, setUser } = useAuth();
   const { errorMessage, pending, run } = useAction();
 
   return (
@@ -25,6 +25,14 @@ export function Layout() {
             <Link to={routes.profile} className="hover:underline">
               Meu perfil
             </Link>
+            {role === "manager" && (
+              <>
+                <span aria-hidden="true">|</span>
+                <Link to={routes.institutions} className="hover:underline">
+                  Minhas instituições
+                </Link>
+              </>
+            )}
             <span aria-hidden="true">|</span>
             <button
               type="button"
