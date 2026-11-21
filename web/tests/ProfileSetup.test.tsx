@@ -18,7 +18,7 @@ describe("ProfileSetup", () => {
     expect(screen.getByText("Esta escolha não pode ser alterada depois.")).toBeTruthy();
   });
 
-  it("creates the manager and opens the dashboard", async () => {
+  it("creates the manager and opens the institution registration", async () => {
     const fetchMock = mockFetch({
       ...NEWCOMER_SESSION,
       "POST /api/profiles/manager": { status: 201, body: MANAGER },
@@ -28,8 +28,7 @@ describe("ProfileSetup", () => {
     await user.click(await screen.findByRole("radio", { name: "Represento uma instituição" }));
     await user.click(screen.getByRole("button", { name: "Continuar" }));
 
-    expect(await screen.findByRole("heading", { name: "Olá, Maria Silva" })).toBeTruthy();
-    expect(screen.getByText("Gestor de instituição")).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Consulte o CNPJ" })).toBeTruthy();
     expect(requestsMade(fetchMock)).toContain("POST /api/profiles/manager");
   });
 
