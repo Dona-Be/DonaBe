@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from typing import Any
 
 import httpx2
@@ -7,6 +8,7 @@ from sqlalchemy.orm import Session
 from src.api.frontend_paths import LOGIN_FAILED_PATH, LOGIN_PATH
 from src.core.config import settings
 from src.domain.user_profile import UserProfile
+from src.models.notification import Notification
 from src.models.user import Donor
 from tests.fakes import USER_EMAIL, USER_NAME, USER_PICTURE
 
@@ -33,6 +35,8 @@ DONOR_PROFILE = {
     "postal_code": "01310200",
     "preferred_causes": ["animals", "health"],
 }
+NOTIFICATION_MESSAGE = "Sua doação para a necessidade Ração mudou para Em contato."
+Notify = Callable[..., Notification]
 
 
 def create_donor(db_session: Session, email: str = USER_EMAIL) -> Donor:
