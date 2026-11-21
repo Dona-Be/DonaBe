@@ -1,12 +1,9 @@
 from typing import Any
 
-from geoalchemy2 import WKTElement
-
 from src.domain.cep import normalize_cep
 from src.domain.enums import Cause, Role
 from src.domain.exceptions import FieldNotInProfileError
 from src.domain.user_profile import UserProfile
-from src.models.institution import WGS84_SRID
 from src.models.user import User
 from src.repositories.users import UserRepository
 from src.services.locations import LocationService
@@ -32,7 +29,7 @@ class ProfileService:
             profile,
             Role.DONOR,
             postal_code=postal_code,
-            location=self._locate(postal_code),
+            location=self._locations.point_of(postal_code),
             preferred_causes=preferred_causes,
             phone=phone,
         )
@@ -42,10 +39,6 @@ class ProfileService:
             if not hasattr(user, field):
                 raise FieldNotInProfileError(field)
             if field == "postal_code" and normalize_cep(value) != user.postal_code:
-                user.location = self._locate(value)
+                user.location = self._locations.point_of(value)
             setattr(user, field, value)
         self._repository.save(user)
-
-    def _locate(self, postal_code: str) -> WKTElement:
-        coordinates = self._locations.locate(postal_code).coordinates
-        return WKTElement(f"POINT({coordinates.longitude} {coordinates.latitude})", srid=WGS84_SRID)

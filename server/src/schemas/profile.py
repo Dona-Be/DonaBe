@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.domain.enums import Cause, Role
+from src.schemas.text import StrictText
 
 MAX_NAME_LENGTH = 100
 
@@ -23,7 +24,7 @@ class NewDonor(BaseModel):
     phone: str | None = None
 
 
-class ProfileChanges(BaseModel):
+class ProfileChanges(StrictText):
     name: str | None = Field(default=None, pattern=r"\S", max_length=MAX_NAME_LENGTH)
     phone: str | None = None
     postal_code: str | None = None

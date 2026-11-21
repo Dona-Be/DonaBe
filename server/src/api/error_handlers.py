@@ -1,6 +1,8 @@
 import logging
 
 from fastapi import FastAPI, Request, status
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from src.api.frontend_paths import LOGIN_FAILED_PATH
@@ -13,11 +15,16 @@ from src.domain.exceptions import (
     CnpjNotFoundError,
     DomainError,
     FieldNotInProfileError,
+    InactiveCnpjError,
+    IncompleteAddressError,
+    InstitutionAlreadyExistsError,
+    InstitutionNotFoundError,
     InvalidCepError,
     InvalidCnpjError,
     InvalidPhoneError,
     InvalidTransitionError,
     NotificationNotFoundError,
+    NotInstitutionManagerError,
     RouteNotFoundError,
     UnsupportedLegalNatureError,
     UserAlreadyExistsError,
@@ -27,21 +34,27 @@ logger = logging.getLogger(__name__)
 
 MAX_LOGGED_LENGTH = 200
 RETRY_AFTER_SECONDS = "60"
+INVALID_VALUES_MESSAGE = "Os dados enviados contêm valores inválidos."
 
 HTTP_STATUS_BY_ERROR: dict[type[Exception], int] = {
     DomainError: status.HTTP_400_BAD_REQUEST,
+    NotInstitutionManagerError: status.HTTP_403_FORBIDDEN,
     UserAlreadyExistsError: status.HTTP_409_CONFLICT,
     InvalidTransitionError: status.HTTP_409_CONFLICT,
+    InstitutionAlreadyExistsError: status.HTTP_409_CONFLICT,
     InvalidCnpjError: status.HTTP_422_UNPROCESSABLE_CONTENT,
     UnsupportedLegalNatureError: status.HTTP_422_UNPROCESSABLE_CONTENT,
     InvalidCepError: status.HTTP_422_UNPROCESSABLE_CONTENT,
     InvalidPhoneError: status.HTTP_422_UNPROCESSABLE_CONTENT,
     CepWithoutCoordinatesError: status.HTTP_422_UNPROCESSABLE_CONTENT,
     FieldNotInProfileError: status.HTTP_422_UNPROCESSABLE_CONTENT,
+    InactiveCnpjError: status.HTTP_422_UNPROCESSABLE_CONTENT,
+    IncompleteAddressError: status.HTTP_422_UNPROCESSABLE_CONTENT,
     CnpjNotFoundError: status.HTTP_404_NOT_FOUND,
     CepNotFoundError: status.HTTP_404_NOT_FOUND,
     RouteNotFoundError: status.HTTP_404_NOT_FOUND,
     NotificationNotFoundError: status.HTTP_404_NOT_FOUND,
+    InstitutionNotFoundError: status.HTTP_404_NOT_FOUND,
     ExternalServiceError: status.HTTP_503_SERVICE_UNAVAILABLE,
 }
 
@@ -88,7 +101,21 @@ def redirect_to_login_with_error(request: Request, error: Exception) -> Redirect
     return RedirectResponse(settings.frontend_page(LOGIN_FAILED_PATH))
 
 
+async def respond_to_invalid_request(
+    request: Request, error: RequestValidationError
+) -> JSONResponse:
+    try:
+        return await request_validation_exception_handler(request, error)
+    except ValueError:
+        # The echoed input cannot be rendered: a lone surrogate or a NaN.
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            content={"detail": INVALID_VALUES_MESSAGE},
+        )
+
+
 def register_error_handlers(app: FastAPI) -> None:
     for error_type in HTTP_STATUS_BY_ERROR:
         app.add_exception_handler(error_type, respond_with_error)
     app.add_exception_handler(GoogleLoginError, redirect_to_login_with_error)
+    app.add_exception_handler(RequestValidationError, respond_to_invalid_request)

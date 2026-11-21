@@ -4,10 +4,13 @@ from typing import TYPE_CHECKING, Any, ClassVar
 from geoalchemy2 import Geography, WKBElement
 from sqlalchemy import ForeignKey, Index, String
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
-from src.domain.enums import Cause, InstitutionType, Verdict
+from src.domain.cep import normalize_cep
+from src.domain.enums import Cause, InstitutionType, NeedStatus, Verdict
+from src.domain.phone import validate_cellphone_or_landline
 from src.models.base import Base, created_at_column, enum_type
+from src.models.need import Need
 
 if TYPE_CHECKING:
     from src.models.user import Manager
@@ -15,6 +18,15 @@ if TYPE_CHECKING:
 WGS84_SRID = 4326
 CAUSES_INDEX = "ix_institutions_causes"
 EMPTY_LIST = "{}"
+OPTIONAL_TEXTS = (
+    "trade_name",
+    "description",
+    "complement",
+    "contact_email",
+    "website",
+    "instagram",
+    "facebook",
+)
 
 
 class Institution(Base):
@@ -56,6 +68,30 @@ class Institution(Base):
     created_at: Mapped[datetime] = created_at_column()
 
     manager: Mapped["Manager"] = relationship(back_populates="institutions")
+    open_needs: Mapped[list[Need]] = relationship(
+        primaryjoin=lambda: (
+            (Need.institution_id == Institution.id) & (Need.status == NeedStatus.OPEN)
+        ),
+        order_by=Need.id,
+        viewonly=True,
+    )
+
+    @validates(*OPTIONAL_TEXTS)
+    def _empty_text_means_none(self, _key: str, text: str | None) -> str | None:
+        # A PATCH sends an empty text to remove the saved one.
+        return text or None
+
+    @validates("phone")
+    def _keep_only_phone_digits(self, _key: str, phone: str | None) -> str | None:
+        if not phone:
+            return None
+        return validate_cellphone_or_landline(phone)
+
+    @validates("postal_code")
+    def _validate_postal_code(self, _key: str, postal_code: str | None) -> str | None:
+        if postal_code is None:
+            return None
+        return normalize_cep(postal_code)
 
 
 class Association(Institution):

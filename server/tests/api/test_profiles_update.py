@@ -68,6 +68,7 @@ def test_a_new_cep_without_coordinates_keeps_the_old_one(
         {"name": ""},
         {"name": "   "},
         {"name": "x" * 101},
+        {"name": "Maria\x00"},
         {"preferred_causes": ["sports"]},
         {"phone": "(11) 9999-000"},
         {"postal_code": "0131020"},

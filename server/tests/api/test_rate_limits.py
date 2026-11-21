@@ -34,6 +34,29 @@ def test_profile_edits_over_the_limit_are_refused(client: TestClient) -> None:
     assert client.patch("/api/profiles/me", json={}).json() == TOO_MANY_ATTEMPTS
 
 
+@pytest.mark.parametrize(
+    ("method", "path"), [("GET", "/lookup?cnpj=1"), ("POST", ""), ("PATCH", "/1")]
+)
+def test_institution_requests_over_the_limit_are_refused(
+    client: TestClient, method: str, path: str
+) -> None:
+    sign_up(client, "manager")
+    url = f"/api/institutions{path}"
+
+    statuses = [client.request(method, url, json={"cnpj": "1"}).status_code for _ in range(21)]
+
+    assert statuses == [422] * 20 + [429]
+    assert client.request(method, url).json() == TOO_MANY_ATTEMPTS
+
+
+def test_registrations_count_as_cep_lookups(client: TestClient) -> None:
+    sign_up(client, "manager")
+    for _ in range(20):
+        client.post("/api/institutions", json={"cnpj": "1"})
+
+    assert client.patch("/api/institutions/1", json={}).status_code == 429
+
+
 def test_donor_signups_over_the_limit_are_refused(client: TestClient) -> None:
     client.get(GOOGLE_CALLBACK, follow_redirects=False)
     invalid = {**DONOR_SIGNUP, "postal_code": "0131020"}

@@ -1,16 +1,14 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Path, Query, status
+from fastapi import APIRouter, Query, status
 
 from src.api.authentication import CurrentUser
 from src.api.dependencies import NotificationServiceDep
+from src.api.parameters import MAX_INTEGER, DatabaseId
 from src.models.notification import Notification
 from src.schemas.notification import PublicNotification, UnreadCount
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
-
-# PostgreSQL refuses a larger integer, which would turn into a 500.
-MAX_INTEGER = 2**31 - 1
 
 
 @router.get(
@@ -49,8 +47,6 @@ def mark_all_as_read(user: CurrentUser, service: NotificationServiceDep) -> None
     summary="Mark one of your notifications as read",
 )
 def mark_as_read(
-    notification_id: Annotated[int, Path(ge=1, le=MAX_INTEGER)],
-    user: CurrentUser,
-    service: NotificationServiceDep,
+    notification_id: DatabaseId, user: CurrentUser, service: NotificationServiceDep
 ) -> None:
     service.mark_as_read(user, notification_id)
