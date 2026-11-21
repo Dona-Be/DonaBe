@@ -87,3 +87,18 @@ class InstitutionNotFoundError(DomainError):
 class NotInstitutionManagerError(DomainError):
     def __init__(self) -> None:
         super().__init__("Apenas o gestor da instituição pode editá-la.")
+
+
+class NeedNotFoundError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Necessidade não encontrada.")
+
+
+class NotNeedManagerError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Apenas o gestor da instituição pode alterar esta necessidade.")
+
+
+class NeedNotOpenError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Apenas necessidades abertas podem mudar de status.")
