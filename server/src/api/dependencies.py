@@ -12,6 +12,7 @@ from src.connectors.json_api import http_client
 from src.connectors.routing import OsrmRoutePlanner, RoutePlanner
 from src.core.database import engine
 from src.repositories.institutions import InstitutionRepository, SqlAlchemyInstitutionRepository
+from src.repositories.needs import NeedRepository, SqlAlchemyNeedRepository
 from src.repositories.notifications import NotificationRepository, SqlAlchemyNotificationRepository
 from src.repositories.users import SqlAlchemyUserRepository, UserRepository
 from src.services.cnpj import CnpjService
@@ -22,6 +23,7 @@ from src.services.intent_events import (
     ManagerNotificationObserver,
 )
 from src.services.locations import LocationService
+from src.services.needs import NeedService
 from src.services.notifications import NotificationService
 from src.services.profiles import ProfileService
 from src.services.users import UserService
@@ -116,6 +118,20 @@ def get_institution_service(
 
 
 InstitutionServiceDep = Annotated[InstitutionService, Depends(get_institution_service)]
+
+
+def get_need_repository(session: Annotated[Session, Depends(get_db_session)]) -> NeedRepository:
+    return SqlAlchemyNeedRepository(session)
+
+
+def get_need_service(
+    repository: Annotated[NeedRepository, Depends(get_need_repository)],
+    institutions: Annotated[InstitutionRepository, Depends(get_institution_repository)],
+) -> NeedService:
+    return NeedService(repository, institutions)
+
+
+NeedServiceDep = Annotated[NeedService, Depends(get_need_service)]
 
 
 def get_notification_repository(
