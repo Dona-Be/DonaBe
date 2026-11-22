@@ -253,6 +253,7 @@ function DetailsStep({
             label="E-mail de contato"
             optional
             type="email"
+            maxLength={200}
             pattern={EMAIL_PATTERN}
             title="Um e-mail como nome@exemplo.org"
             autoComplete="email"
