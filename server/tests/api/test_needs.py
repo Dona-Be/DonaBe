@@ -40,9 +40,7 @@ def test_the_manager_creates_and_edits_a_need(manager_client: TestClient) -> Non
         "title": "Cobertores infantis",
         "quantity": "12",
     }
-    cleared = manager_client.patch(
-        f"/api/needs/{need['id']}", json={"title": None, "quantity": None}
-    )
+    cleared = manager_client.patch(f"/api/needs/{need['id']}", json={"title": None, "quantity": ""})
     assert cleared.json() == {**edited.json(), "quantity": None}
 
 

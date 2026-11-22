@@ -32,8 +32,6 @@ class NeedService:
         need = self._find_need(need_id)
         self._check_owner(manager, need)
         for field, value in changes.items():
-            if value is None and field != "quantity":
-                continue
             setattr(need, field, value)
         self._repository.save(need)
         return need

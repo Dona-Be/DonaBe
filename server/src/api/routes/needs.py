@@ -45,6 +45,7 @@ def list_institution_needs(
     "/needs/{need_id}",
     response_model=PublicNeed,
     summary="Edit a need",
+    description="Fields left out or null are kept. An empty quantity removes it.",
 )
 def update_need(
     need_id: DatabaseId,
@@ -52,7 +53,7 @@ def update_need(
     manager: CurrentManager,
     service: NeedServiceDep,
 ) -> Need:
-    return service.update(manager, need_id, changes.model_dump(exclude_unset=True))
+    return service.update(manager, need_id, changes.model_dump(exclude_none=True))
 
 
 @router.post(

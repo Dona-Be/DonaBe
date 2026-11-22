@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, Index
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from src.domain.enums import NeedStatus
 from src.models.base import Base, created_at_column, enum_type
@@ -31,3 +31,7 @@ class Need(Base):
     donation_intents: Mapped[list["DonationIntent"]] = relationship(
         back_populates="need", order_by="DonationIntent.id"
     )
+
+    @validates("quantity")
+    def _empty_quantity_means_none(self, _key: str, quantity: str | None) -> str | None:
+        return quantity or None
