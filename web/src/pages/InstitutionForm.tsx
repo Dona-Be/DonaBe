@@ -10,25 +10,29 @@ import {
 } from "../api/institutions";
 import { PrimaryButton, SecondaryButton } from "../components/Button";
 import { ErrorMessage } from "../components/ErrorMessage";
-import { CausesField } from "../components/ProfileFields";
+import { CausesField, PhoneField } from "../components/ProfileFields";
 import { TextField } from "../components/TextField";
-import { formatPostalCode } from "../format";
+import { formatPostalCode, joinPhone, splitPhone, type Phone } from "../format";
 import { useAction } from "../hooks/useAction";
 import { routes } from "../routes";
 import { institutionTypeLabels, institutionVerdictLabels } from "./institutionLabels";
 
-type InstitutionFormValues = InstitutionChanges;
+type InstitutionFormValues = Omit<InstitutionChanges, "phone"> & { phone: Phone };
 type ValueChange = <Field extends keyof InstitutionFormValues>(
   field: Field,
   value: InstitutionFormValues[Field],
 ) => void;
+
+const EMAIL_PATTERN = String.raw`[^@\s]+@[^@\s]+\.[^@\s]+`;
+const LINK_PATTERN = String.raw`https?://\S+`;
+const LINK_TITLE = "Comece com http:// ou https://";
 
 function emptyFormValues(): InstitutionFormValues {
   return {
     trade_name: "",
     description: "",
     causes: [],
-    phone: "",
+    phone: splitPhone(""),
     contact_email: "",
     website: "",
     instagram: "",
@@ -70,7 +74,7 @@ function initialValues(
     ...officialValues,
     description: stringValue(institution.description),
     causes: institution.causes,
-    phone: stringValue(institution.phone),
+    phone: splitPhone(stringValue(institution.phone)),
     contact_email: stringValue(institution.contact_email),
     website: stringValue(institution.website),
     instagram: stringValue(institution.instagram),
@@ -234,18 +238,13 @@ function DetailsStep({
 
       <fieldset className="space-y-5">
         <legend className="text-xl font-bold">Contatos</legend>
-        <TextField
-          label="Telefone / WhatsApp"
-          optional
-          type="tel"
-          autoComplete="tel"
-          value={values.phone}
-          onChange={(event) => onValueChange("phone", event.target.value)}
-        />
+        <PhoneField value={values.phone} onChange={(phone) => onValueChange("phone", phone)} />
         <TextField
           label="E-mail de contato"
           optional
           type="email"
+          pattern={EMAIL_PATTERN}
+          title="Um e-mail como nome@exemplo.org"
           autoComplete="email"
           value={values.contact_email}
           onChange={(event) => onValueChange("contact_email", event.target.value)}
@@ -254,6 +253,8 @@ function DetailsStep({
           label="Site"
           optional
           type="url"
+          pattern={LINK_PATTERN}
+          title={LINK_TITLE}
           placeholder="https://"
           value={values.website}
           onChange={(event) => onValueChange("website", event.target.value)}
@@ -262,6 +263,8 @@ function DetailsStep({
           label="Instagram"
           optional
           type="url"
+          pattern={LINK_PATTERN}
+          title={LINK_TITLE}
           placeholder="https://instagram.com/"
           value={values.instagram}
           onChange={(event) => onValueChange("instagram", event.target.value)}
@@ -270,6 +273,8 @@ function DetailsStep({
           label="Facebook"
           optional
           type="url"
+          pattern={LINK_PATTERN}
+          title={LINK_TITLE}
           placeholder="https://facebook.com/"
           value={values.facebook}
           onChange={(event) => onValueChange("facebook", event.target.value)}
@@ -311,6 +316,8 @@ function DetailsStep({
           <TextField
             label="UF"
             maxLength={2}
+            pattern="[A-Za-z]{2}"
+            title="Duas letras"
             value={values.state}
             onChange={(event) => onValueChange("state", event.target.value.toUpperCase())}
           />
@@ -455,6 +462,7 @@ export function InstitutionForm({ existing }: Readonly<{ existing?: Institution 
     if (!preview) return;
     const changes = {
       ...values,
+      phone: joinPhone(values.phone) ?? "",
       postal_code: formatPostalCode(values.postal_code),
     } satisfies InstitutionChanges;
 
