@@ -1,6 +1,5 @@
 import { useState, type SubmitEvent } from "react";
 import { Link, useNavigate } from "react-router";
-import { causeLabels, causes, type Cause } from "../causes";
 import {
   createInstitution,
   lookupInstitution,
@@ -11,6 +10,7 @@ import {
 } from "../api/institutions";
 import { PrimaryButton, SecondaryButton } from "../components/Button";
 import { ErrorMessage } from "../components/ErrorMessage";
+import { CausesField } from "../components/ProfileFields";
 import { TextField } from "../components/TextField";
 import { formatPostalCode } from "../format";
 import { useAction } from "../hooks/useAction";
@@ -18,12 +18,10 @@ import { routes } from "../routes";
 import { institutionTypeLabels, institutionVerdictLabels } from "./institutionLabels";
 
 type InstitutionFormValues = InstitutionChanges;
-type EditableField = Exclude<keyof InstitutionChanges, "causes">;
-
-const CAUSE_CLASS =
-  "cursor-pointer rounded-full border border-slate-500 px-4 py-2 has-checked:border-sky-700 " +
-  "has-checked:bg-sky-100 has-checked:ring-1 has-checked:ring-sky-700 " +
-  "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-sky-700";
+type ValueChange = <Field extends keyof InstitutionFormValues>(
+  field: Field,
+  value: InstitutionFormValues[Field],
+) => void;
 
 function emptyFormValues(): InstitutionFormValues {
   return {
@@ -185,8 +183,7 @@ interface DetailsStepProps {
   pending: boolean;
   onSave: (event: SubmitEvent<HTMLFormElement>) => void;
   onBack: () => void;
-  onValueChange: (field: EditableField, value: string) => void;
-  onCauseToggle: (cause: Cause) => void;
+  onValueChange: ValueChange;
 }
 
 function DetailsStep({
@@ -197,7 +194,6 @@ function DetailsStep({
   onSave,
   onBack,
   onValueChange,
-  onCauseToggle,
 }: Readonly<DetailsStepProps>) {
   return (
     <form onSubmit={onSave} className="space-y-6">
@@ -225,22 +221,11 @@ function DetailsStep({
           />
           <p className="mt-2 text-sm text-slate-600">Conte um pouco sobre o trabalho realizado.</p>
         </div>
-        <fieldset>
-          <legend className="mb-2 font-bold">Causas atendidas</legend>
-          <div className="flex flex-wrap gap-2">
-            {causes.map((cause) => (
-              <label key={cause} className={CAUSE_CLASS}>
-                <input
-                  type="checkbox"
-                  className="sr-only"
-                  checked={values.causes.includes(cause)}
-                  onChange={() => onCauseToggle(cause)}
-                />
-                {causeLabels[cause]}
-              </label>
-            ))}
-          </div>
-        </fieldset>
+        <CausesField
+          legend="Causas atendidas"
+          value={values.causes}
+          onChange={(causes) => onValueChange("causes", causes)}
+        />
       </fieldset>
 
       <fieldset className="space-y-5">
@@ -394,8 +379,7 @@ interface FormBodyProps {
   onContinue: () => void;
   onSave: (event: SubmitEvent<HTMLFormElement>) => void;
   onBack: () => void;
-  onValueChange: (field: EditableField, value: string) => void;
-  onCauseToggle: (cause: Cause) => void;
+  onValueChange: ValueChange;
 }
 
 function InstitutionFormBody({
@@ -411,7 +395,6 @@ function InstitutionFormBody({
   onSave,
   onBack,
   onValueChange,
-  onCauseToggle,
 }: Readonly<FormBodyProps>) {
   if (step === "lookup") {
     return (
@@ -435,7 +418,6 @@ function InstitutionFormBody({
       onSave={onSave}
       onBack={onBack}
       onValueChange={onValueChange}
-      onCauseToggle={onCauseToggle}
     />
   );
 }
@@ -460,18 +442,9 @@ export function InstitutionForm({ existing }: Readonly<{ existing?: Institution 
     });
   }
 
-  function updateValue(field: EditableField, value: string) {
+  const updateValue: ValueChange = (field, value) => {
     setValues((current) => ({ ...current, [field]: value }));
-  }
-
-  function toggleCause(cause: Cause) {
-    setValues((current) => ({
-      ...current,
-      causes: current.causes.includes(cause)
-        ? current.causes.filter((item) => item !== cause)
-        : [...current.causes, cause],
-    }));
-  }
+  };
 
   function handleSave(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -510,7 +483,6 @@ export function InstitutionForm({ existing }: Readonly<{ existing?: Institution 
         onSave={handleSave}
         onBack={() => setStep("lookup")}
         onValueChange={updateValue}
-        onCauseToggle={toggleCause}
       />
 
       <Link to={routes.institutions} className="inline-block text-sky-800 underline">

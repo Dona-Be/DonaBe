@@ -59,7 +59,11 @@ export function PhoneField({ value, onChange }: Readonly<FieldProps<Phone>>) {
   );
 }
 
-export function CausesField({ value, onChange }: Readonly<FieldProps<Cause[]>>) {
+export function CausesField({
+  legend = "Causas preferidas",
+  value,
+  onChange,
+}: Readonly<FieldProps<Cause[]> & { legend?: string }>) {
   function toggle(cause: Cause) {
     const others = value.filter((preferred) => preferred !== cause);
     onChange(others.length < value.length ? others : [...others, cause]);
@@ -68,7 +72,8 @@ export function CausesField({ value, onChange }: Readonly<FieldProps<Cause[]>>) 
   return (
     <fieldset>
       <legend className="mb-2 font-bold">
-        Causas preferidas<span className="font-normal"> (escolha quantas quiser)</span>
+        {legend}
+        <span className="font-normal"> (escolha quantas quiser)</span>
       </legend>
       <div className="flex flex-wrap gap-2">
         {causes.map((cause) => (
