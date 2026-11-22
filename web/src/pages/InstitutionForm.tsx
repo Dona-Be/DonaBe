@@ -8,9 +8,10 @@ import {
   type InstitutionChanges,
   type InstitutionPreview,
 } from "../api/institutions";
-import { PrimaryButton, SecondaryButton } from "../components/Button";
+import { PrimaryButton, SECONDARY_CLASS, SecondaryButton } from "../components/Button";
 import { ErrorMessage } from "../components/ErrorMessage";
 import { CausesField, PhoneField } from "../components/ProfileFields";
+import { Section } from "../components/Section";
 import { TextField } from "../components/TextField";
 import { formatPostalCode, joinPhone, splitPhone, type Phone } from "../format";
 import { useAction } from "../hooks/useAction";
@@ -96,11 +97,11 @@ function InstitutionSummary({ institution }: Readonly<{ institution: Institution
     .join(", ");
 
   return (
-    <section aria-label="Dados oficiais do CNPJ" className="space-y-4 rounded-xl bg-slate-100 p-5">
-      <div>
-        <h2 className="text-xl font-bold">Dados oficiais do CNPJ</h2>
-        <p className="text-slate-600">Confira as informações consultadas antes de continuar.</p>
-      </div>
+    <section
+      aria-label="Dados oficiais do CNPJ"
+      className="my-6 space-y-4 rounded-lg bg-slate-100 p-4"
+    >
+      <h2 className="text-xl font-bold">Dados oficiais do CNPJ</h2>
       <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
         <div>
           <dt className="text-sm text-slate-600">Razão social</dt>
@@ -119,7 +120,7 @@ function InstitutionSummary({ institution }: Readonly<{ institution: Institution
           <dd className="font-semibold">{institutionVerdictLabels[institution.verdict]}</dd>
         </div>
         <div className="sm:col-span-2">
-          <dt className="text-sm text-slate-600">Endereço oficial</dt>
+          <dt className="text-sm text-slate-600">Endereço</dt>
           <dd className="font-semibold">{address || "Endereço não informado"}</dd>
         </div>
       </dl>
@@ -139,6 +140,7 @@ interface LookupStepProps {
   cnpj: string;
   preview: InstitutionPreview | null;
   pending: boolean;
+  errorMessage: string | null;
   onCnpjChange: (value: string) => void;
   onLookup: (event: SubmitEvent<HTMLFormElement>) => void;
   onContinue: () => void;
@@ -148,13 +150,14 @@ function LookupStep({
   cnpj,
   preview,
   pending,
+  errorMessage,
   onCnpjChange,
   onLookup,
   onContinue,
 }: Readonly<LookupStepProps>) {
   return (
-    <div className="space-y-6">
-      <form onSubmit={onLookup} className="space-y-5">
+    <>
+      <form onSubmit={onLookup} className="mt-6 space-y-4">
         <TextField
           label="CNPJ"
           hint="Digite os 14 números do CNPJ."
@@ -165,19 +168,22 @@ function LookupStep({
           value={cnpj}
           onChange={(event) => onCnpjChange(event.target.value)}
         />
-        <PrimaryButton disabled={pending} className="w-full sm:w-auto">
-          Consultar CNPJ
-        </PrimaryButton>
+        {errorMessage && <ErrorMessage message={errorMessage} />}
+        <div className="flex justify-end">
+          <PrimaryButton disabled={pending}>Consultar CNPJ</PrimaryButton>
+        </div>
       </form>
       {preview && (
         <>
           <InstitutionSummary institution={preview} />
-          <PrimaryButton disabled={pending} className="w-full sm:w-auto" onClick={onContinue}>
-            Continuar para os detalhes
-          </PrimaryButton>
+          <div className="flex justify-end">
+            <PrimaryButton disabled={pending} onClick={onContinue}>
+              Continuar para os detalhes
+            </PrimaryButton>
+          </div>
         </>
       )}
-    </div>
+    </>
   );
 }
 
@@ -186,6 +192,7 @@ interface DetailsStepProps {
   values: InstitutionFormValues;
   isEditing: boolean;
   pending: boolean;
+  errorMessage: string | null;
   onSave: (event: SubmitEvent<HTMLFormElement>) => void;
   onBack: () => void;
   onValueChange: ValueChange;
@@ -196,100 +203,101 @@ function DetailsStep({
   values,
   isEditing,
   pending,
+  errorMessage,
   onSave,
   onBack,
   onValueChange,
 }: Readonly<DetailsStepProps>) {
   return (
-    <form onSubmit={onSave} className="space-y-6">
+    <>
       <InstitutionSummary institution={preview} />
-      <fieldset className="space-y-5">
-        <legend className="text-xl font-bold">Sobre a instituição</legend>
-        <TextField
-          label="Nome fantasia"
-          maxLength={200}
-          value={values.trade_name}
-          onChange={(event) => onValueChange("trade_name", event.target.value)}
-        />
-        <div>
-          <label htmlFor="institution-description" className="mb-2 block font-bold">
-            Descrição
-          </label>
-          <textarea
-            id="institution-description"
-            aria-describedby="institution-description-hint"
-            required
-            maxLength={2000}
-            rows={5}
-            value={values.description}
-            onChange={(event) => onValueChange("description", event.target.value)}
-            className="w-full rounded-lg border border-slate-500 p-4 focus:border-sky-700 focus:outline-1 focus:outline-sky-700"
+      <form onSubmit={onSave} className="divide-y divide-slate-200 border-t border-slate-200">
+        <Section title="Sobre a instituição">
+          <div className="sm:col-span-2">
+            <TextField
+              label="Nome fantasia"
+              maxLength={200}
+              value={values.trade_name}
+              onChange={(event) => onValueChange("trade_name", event.target.value)}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label htmlFor="institution-description" className="mb-2 block font-bold">
+              Descrição
+            </label>
+            <textarea
+              id="institution-description"
+              aria-describedby="institution-description-hint"
+              required
+              maxLength={2000}
+              rows={5}
+              value={values.description}
+              onChange={(event) => onValueChange("description", event.target.value)}
+              className="w-full rounded-lg border border-slate-500 p-4 focus:border-sky-700 focus:outline-1 focus:outline-sky-700"
+            />
+            <p id="institution-description-hint" className="mt-2 text-slate-600">
+              Conte um pouco sobre o trabalho realizado.
+            </p>
+          </div>
+          <div className="sm:col-span-2">
+            <CausesField
+              legend="Causas atendidas"
+              value={values.causes}
+              onChange={(causes) => onValueChange("causes", causes)}
+            />
+          </div>
+        </Section>
+        <Section title="Contatos">
+          <PhoneField value={values.phone} onChange={(phone) => onValueChange("phone", phone)} />
+          <TextField
+            label="E-mail de contato"
+            optional
+            type="email"
+            pattern={EMAIL_PATTERN}
+            title="Um e-mail como nome@exemplo.org"
+            autoComplete="email"
+            value={values.contact_email}
+            onChange={(event) => onValueChange("contact_email", event.target.value)}
           />
-          <p id="institution-description-hint" className="mt-2 text-sm text-slate-600">
-            Conte um pouco sobre o trabalho realizado.
-          </p>
-        </div>
-        <CausesField
-          legend="Causas atendidas"
-          value={values.causes}
-          onChange={(causes) => onValueChange("causes", causes)}
-        />
-      </fieldset>
-
-      <fieldset className="space-y-5">
-        <legend className="text-xl font-bold">Contatos</legend>
-        <PhoneField value={values.phone} onChange={(phone) => onValueChange("phone", phone)} />
-        <TextField
-          label="E-mail de contato"
-          optional
-          type="email"
-          pattern={EMAIL_PATTERN}
-          title="Um e-mail como nome@exemplo.org"
-          autoComplete="email"
-          value={values.contact_email}
-          onChange={(event) => onValueChange("contact_email", event.target.value)}
-        />
-        <TextField
-          label="Site"
-          optional
-          type="url"
-          pattern={LINK_PATTERN}
-          title={LINK_TITLE}
-          placeholder="https://"
-          value={values.website}
-          onChange={(event) => onValueChange("website", event.target.value)}
-        />
-        <TextField
-          label="Instagram"
-          optional
-          type="url"
-          pattern={LINK_PATTERN}
-          title={LINK_TITLE}
-          placeholder="https://instagram.com/"
-          value={values.instagram}
-          onChange={(event) => onValueChange("instagram", event.target.value)}
-        />
-        <TextField
-          label="Facebook"
-          optional
-          type="url"
-          pattern={LINK_PATTERN}
-          title={LINK_TITLE}
-          placeholder="https://facebook.com/"
-          value={values.facebook}
-          onChange={(event) => onValueChange("facebook", event.target.value)}
-        />
-      </fieldset>
-
-      <fieldset className="space-y-5">
-        <legend className="text-xl font-bold">Endereço</legend>
-        <p className="-mt-3 text-slate-600">Você pode corrigir ou completar o endereço oficial.</p>
-        <TextField
-          label="Rua"
-          value={values.street}
-          onChange={(event) => onValueChange("street", event.target.value)}
-        />
-        <div className="grid gap-5 sm:grid-cols-2">
+          <TextField
+            label="Site"
+            optional
+            type="url"
+            pattern={LINK_PATTERN}
+            title={LINK_TITLE}
+            placeholder="https://"
+            value={values.website}
+            onChange={(event) => onValueChange("website", event.target.value)}
+          />
+          <TextField
+            label="Instagram"
+            optional
+            type="url"
+            pattern={LINK_PATTERN}
+            title={LINK_TITLE}
+            placeholder="https://instagram.com/"
+            value={values.instagram}
+            onChange={(event) => onValueChange("instagram", event.target.value)}
+          />
+          <TextField
+            label="Facebook"
+            optional
+            type="url"
+            pattern={LINK_PATTERN}
+            title={LINK_TITLE}
+            placeholder="https://facebook.com/"
+            value={values.facebook}
+            onChange={(event) => onValueChange("facebook", event.target.value)}
+          />
+        </Section>
+        <Section title="Endereço">
+          <div className="sm:col-span-2">
+            <TextField
+              label="Rua"
+              value={values.street}
+              onChange={(event) => onValueChange("street", event.target.value)}
+            />
+          </div>
           <TextField
             label="Número"
             value={values.number}
@@ -301,13 +309,11 @@ function DetailsStep({
             value={values.complement}
             onChange={(event) => onValueChange("complement", event.target.value)}
           />
-        </div>
-        <TextField
-          label="Bairro"
-          value={values.neighborhood}
-          onChange={(event) => onValueChange("neighborhood", event.target.value)}
-        />
-        <div className="grid gap-5 sm:grid-cols-[1fr_6rem]">
+          <TextField
+            label="Bairro"
+            value={values.neighborhood}
+            onChange={(event) => onValueChange("neighborhood", event.target.value)}
+          />
           <TextField
             label="Cidade"
             value={values.city}
@@ -321,28 +327,34 @@ function DetailsStep({
             value={values.state}
             onChange={(event) => onValueChange("state", event.target.value.toUpperCase())}
           />
+          <TextField
+            label="CEP"
+            inputMode="numeric"
+            autoComplete="postal-code"
+            value={values.postal_code}
+            onChange={(event) => onValueChange("postal_code", event.target.value)}
+            onBlur={() => onValueChange("postal_code", formatPostalCode(values.postal_code))}
+          />
+        </Section>
+        <div className="space-y-4 pt-6">
+          {errorMessage && <ErrorMessage message={errorMessage} />}
+          <div className="flex justify-end gap-3">
+            {isEditing ? (
+              <Link to={routes.institutions} className={`${SECONDARY_CLASS} flex items-center`}>
+                Cancelar
+              </Link>
+            ) : (
+              <SecondaryButton disabled={pending} onClick={onBack}>
+                Voltar
+              </SecondaryButton>
+            )}
+            <PrimaryButton disabled={pending}>
+              {isEditing ? "Salvar alterações" : "Cadastrar instituição"}
+            </PrimaryButton>
+          </div>
         </div>
-        <TextField
-          label="CEP"
-          inputMode="numeric"
-          autoComplete="postal-code"
-          value={values.postal_code}
-          onChange={(event) => onValueChange("postal_code", event.target.value)}
-          onBlur={() => onValueChange("postal_code", formatPostalCode(values.postal_code))}
-        />
-      </fieldset>
-
-      <div className="flex flex-col gap-3 sm:flex-row">
-        {!isEditing && (
-          <SecondaryButton disabled={pending} onClick={onBack}>
-            Voltar
-          </SecondaryButton>
-        )}
-        <PrimaryButton disabled={pending} className="flex-1">
-          {isEditing ? "Salvar alterações" : "Cadastrar instituição"}
-        </PrimaryButton>
-      </div>
-    </form>
+      </form>
+    </>
   );
 }
 
@@ -352,30 +364,8 @@ function titleFor(isEditing: boolean, step: "lookup" | "details"): string {
   return "Complete os dados";
 }
 
-function descriptionFor(isEditing: boolean, step: "lookup" | "details"): string {
-  if (isEditing) return "Atualize os dados de contato, causas e endereço da instituição.";
-  if (step === "lookup") {
-    return "Informe o CNPJ para conferir os dados oficiais e a classificação da instituição.";
-  }
-  return "Confira os dados oficiais e complete as informações que os doadores verão.";
-}
-
 function initialStep(existing: Institution | undefined): "lookup" | "details" {
   return existing === undefined ? "lookup" : "details";
-}
-
-function InstitutionFormHeader({
-  isEditing,
-  step,
-}: Readonly<{ isEditing: boolean; step: "lookup" | "details" }>) {
-  const eyebrow = isEditing ? "Minhas instituições" : "Cadastro de instituição";
-  return (
-    <div>
-      <p className="font-semibold text-sky-800">{eyebrow}</p>
-      <h1 className="mt-2 text-3xl font-extrabold sm:text-4xl">{titleFor(isEditing, step)}</h1>
-      <p className="mt-2 text-slate-600">{descriptionFor(isEditing, step)}</p>
-    </div>
-  );
 }
 
 interface FormBodyProps {
@@ -385,6 +375,7 @@ interface FormBodyProps {
   values: InstitutionFormValues;
   isEditing: boolean;
   pending: boolean;
+  errorMessage: string | null;
   onCnpjChange: (value: string) => void;
   onLookup: (event: SubmitEvent<HTMLFormElement>) => void;
   onContinue: () => void;
@@ -400,6 +391,7 @@ function InstitutionFormBody({
   values,
   isEditing,
   pending,
+  errorMessage,
   onCnpjChange,
   onLookup,
   onContinue,
@@ -413,6 +405,7 @@ function InstitutionFormBody({
         cnpj={cnpj}
         preview={preview}
         pending={pending}
+        errorMessage={errorMessage}
         onCnpjChange={onCnpjChange}
         onLookup={onLookup}
         onContinue={onContinue}
@@ -426,6 +419,7 @@ function InstitutionFormBody({
       values={values}
       isEditing={isEditing}
       pending={pending}
+      errorMessage={errorMessage}
       onSave={onSave}
       onBack={onBack}
       onValueChange={onValueChange}
@@ -479,9 +473,8 @@ export function InstitutionForm({ existing }: Readonly<{ existing?: Institution 
   }
 
   return (
-    <section className="space-y-6 rounded border border-slate-200 bg-white p-6 sm:p-8">
-      <InstitutionFormHeader isEditing={isEditing} step={step} />
-      {errorMessage && <ErrorMessage message={errorMessage} />}
+    <section className="rounded border border-slate-200 bg-white p-6 sm:p-8">
+      <h1 className="text-4xl font-extrabold">{titleFor(isEditing, step)}</h1>
       <InstitutionFormBody
         step={step}
         cnpj={cnpj}
@@ -489,6 +482,7 @@ export function InstitutionForm({ existing }: Readonly<{ existing?: Institution 
         values={values}
         isEditing={isEditing}
         pending={pending}
+        errorMessage={errorMessage}
         onCnpjChange={changeCnpj}
         onLookup={handleLookup}
         onContinue={() => setStep("details")}
@@ -496,10 +490,6 @@ export function InstitutionForm({ existing }: Readonly<{ existing?: Institution 
         onBack={() => setStep("lookup")}
         onValueChange={updateValue}
       />
-
-      <Link to={routes.institutions} className="inline-block text-sky-800 underline">
-        Minhas instituições
-      </Link>
     </section>
   );
 }

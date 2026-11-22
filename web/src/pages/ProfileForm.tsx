@@ -1,10 +1,11 @@
-import { useState, type ReactNode, type SubmitEvent } from "react";
+import { useState, type SubmitEvent } from "react";
 import { Link } from "react-router";
 import { updateMyProfile } from "../api/profiles";
 import { useAuth } from "../auth/useAuth";
 import { PrimaryButton, SECONDARY_CLASS } from "../components/Button";
 import { ErrorMessage } from "../components/ErrorMessage";
 import { CausesField, PhoneField, PostalCodeField } from "../components/ProfileFields";
+import { Section } from "../components/Section";
 import { TextField } from "../components/TextField";
 import { formatPostalCode, joinPhone, splitPhone } from "../format";
 import { useAction } from "../hooks/useAction";
@@ -12,15 +13,6 @@ import { routes } from "../routes";
 import type { Profile } from "../types/user";
 
 const SAVED_CLASS = "block rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-800";
-
-function Section({ title, children }: Readonly<{ title: string; children: ReactNode }>) {
-  return (
-    <section className="py-6">
-      <h2 className="mb-4 text-2xl font-extrabold">{title}</h2>
-      <div className="grid gap-x-4 gap-y-6 sm:grid-cols-2">{children}</div>
-    </section>
-  );
-}
 
 export function ProfileForm({ user }: Readonly<{ user: Profile }>) {
   const { setUser } = useAuth();

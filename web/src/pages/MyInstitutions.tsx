@@ -30,11 +30,8 @@ export function MyInstitutions() {
 
   return (
     <section className="space-y-6 rounded border border-slate-200 bg-white p-6 sm:p-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-extrabold sm:text-4xl">Minhas instituições</h1>
-          <p className="mt-2 text-slate-600">Consulte e atualize os dados das suas instituições.</p>
-        </div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-3xl font-extrabold sm:text-4xl">Minhas instituições</h1>
         <Link
           to={routes.newInstitution}
           className="inline-flex h-14 items-center justify-center rounded-full bg-sky-300 px-6 font-bold text-sky-950 hover:bg-sky-400 sm:px-8"
@@ -51,9 +48,6 @@ export function MyInstitutions() {
           <p className="mt-2 text-slate-600">
             Cadastre pelo CNPJ para que os doadores possam conhecer seu trabalho.
           </p>
-          <Link to={routes.newInstitution} className="mt-4 inline-block text-sky-800 underline">
-            Começar cadastro
-          </Link>
         </div>
       )}
       {!loading && institutions.length > 0 && (
