@@ -315,19 +315,21 @@ function DetailsStep({
             value={values.neighborhood}
             onChange={(event) => onValueChange("neighborhood", event.target.value)}
           />
-          <TextField
-            label="Cidade"
-            value={values.city}
-            onChange={(event) => onValueChange("city", event.target.value)}
-          />
-          <TextField
-            label="UF"
-            maxLength={2}
-            pattern="[A-Za-z]{2}"
-            title="Duas letras"
-            value={values.state}
-            onChange={(event) => onValueChange("state", event.target.value.toUpperCase())}
-          />
+          <div className="grid grid-cols-[1fr_5rem] gap-3">
+            <TextField
+              label="Cidade"
+              value={values.city}
+              onChange={(event) => onValueChange("city", event.target.value)}
+            />
+            <TextField
+              label="UF"
+              maxLength={2}
+              pattern="[A-Za-z]{2}"
+              title="Duas letras"
+              value={values.state}
+              onChange={(event) => onValueChange("state", event.target.value.toUpperCase())}
+            />
+          </div>
           <TextField
             label="CEP"
             inputMode="numeric"
@@ -339,9 +341,12 @@ function DetailsStep({
         </Section>
         <div className="space-y-4 pt-6">
           {errorMessage && <ErrorMessage message={errorMessage} />}
-          <div className="flex justify-end gap-3">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             {isEditing ? (
-              <Link to={routes.institutions} className={`${SECONDARY_CLASS} flex items-center`}>
+              <Link
+                to={routes.institutions}
+                className={`${SECONDARY_CLASS} flex items-center justify-center`}
+              >
                 Cancelar
               </Link>
             ) : (
