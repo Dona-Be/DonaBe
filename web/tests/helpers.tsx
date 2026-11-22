@@ -40,6 +40,40 @@ export const VISITOR = { "GET /api/profiles/me": UNAUTHORIZED };
 
 export const NEWCOMER_SESSION = { "GET /api/profiles/me": { body: NEWCOMER } };
 
+export const MANAGER_SESSION = { "GET /api/profiles/me": { body: MANAGER } };
+
+export const INSTITUTION_PREVIEW = {
+  type: "association",
+  cnpj: "60979457000111",
+  legal_name: "ASSOCIACAO DE ASSISTENCIA A CRIANCA DEFICIENTE",
+  trade_name: "Aacd Ibirapuera",
+  street: "Avenida Prof Ascendino Reis",
+  number: "724",
+  complement: null,
+  neighborhood: "VL Clementino",
+  city: "São Paulo",
+  state: "SP",
+  postal_code: "04027000",
+  verdict: "nonprofit",
+  reasons: [
+    "OK - Situação cadastral: Ativa",
+    "OK - Natureza jurídica: 3999 - Associação Privada",
+    "NÃO - Atividade principal: 8630501 - Atividade médica ambulatorial",
+  ],
+};
+
+export const INSTITUTION = {
+  ...INSTITUTION_PREVIEW,
+  id: 1,
+  description: "Reabilitação de crianças com deficiência.",
+  causes: ["health", "people_with_disabilities"],
+  phone: "1120000000",
+  contact_email: "contato@exemplo.org",
+  website: "https://exemplo.org",
+  instagram: "https://instagram.com/exemplo",
+  facebook: "https://facebook.com/exemplo",
+};
+
 function requestKey(input: RequestInfo | URL, options?: RequestInit): string {
   const url = input instanceof Request ? input.url : input.toString();
   return `${options?.method ?? "GET"} ${url}`;

@@ -1,4 +1,5 @@
 import { useState, type SubmitEvent } from "react";
+import { useNavigate } from "react-router";
 import { logout } from "../api/auth";
 import { createManager } from "../api/profiles";
 import { useAuth } from "../auth/useAuth";
@@ -7,6 +8,7 @@ import { PrimaryButton, SecondaryButton } from "../components/Button";
 import { ErrorMessage } from "../components/ErrorMessage";
 import { useAction } from "../hooks/useAction";
 import type { Role } from "../types/user";
+import { routes } from "../routes";
 import { DonorForm } from "./DonorForm";
 
 const OPTION_CLASS =
@@ -22,6 +24,7 @@ const OPTIONS: { role: Role; label: string }[] = [
 
 export function ProfileSetup() {
   const { setUser } = useAuth();
+  const navigate = useNavigate();
   const { errorMessage, setErrorMessage, pending, run } = useAction();
   const [role, setRole] = useState<Role>("donor");
   const [choosing, setChoosing] = useState(true);
@@ -32,7 +35,13 @@ export function ProfileSetup() {
     event.preventDefault();
     setErrorMessage(null);
     if (role === "donor") setChoosing(false);
-    else run(() => createManager().then(setUser));
+    else
+      run(() =>
+        createManager().then((user) => {
+          setUser(user);
+          void navigate(routes.newInstitution);
+        }),
+      );
   }
 
   return (
