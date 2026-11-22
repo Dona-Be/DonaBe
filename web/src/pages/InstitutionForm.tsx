@@ -62,7 +62,7 @@ function initialValues(
     neighborhood: stringValue(institution.neighborhood),
     city: institution.city,
     state: institution.state,
-    postal_code: stringValue(institution.postal_code),
+    postal_code: formatPostalCode(stringValue(institution.postal_code)),
   };
   if (!("id" in institution)) return officialValues;
 
@@ -86,7 +86,7 @@ function InstitutionSummary({ institution }: Readonly<{ institution: Institution
     institution.neighborhood,
     institution.city,
     institution.state,
-    institution.postal_code,
+    formatPostalCode(stringValue(institution.postal_code)),
   ]
     .filter(Boolean)
     .join(", ");
@@ -157,6 +157,7 @@ function LookupStep({
           inputMode="numeric"
           autoComplete="off"
           maxLength={18}
+          readOnly={pending}
           value={cnpj}
           onChange={(event) => onCnpjChange(event.target.value)}
         />
@@ -212,6 +213,7 @@ function DetailsStep({
           </label>
           <textarea
             id="institution-description"
+            aria-describedby="institution-description-hint"
             required
             maxLength={2000}
             rows={5}
@@ -219,7 +221,9 @@ function DetailsStep({
             onChange={(event) => onValueChange("description", event.target.value)}
             className="w-full rounded-lg border border-slate-500 p-4 focus:border-sky-700 focus:outline-1 focus:outline-sky-700"
           />
-          <p className="mt-2 text-sm text-slate-600">Conte um pouco sobre o trabalho realizado.</p>
+          <p id="institution-description-hint" className="mt-2 text-sm text-slate-600">
+            Conte um pouco sobre o trabalho realizado.
+          </p>
         </div>
         <CausesField
           legend="Causas atendidas"
