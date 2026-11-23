@@ -13,7 +13,7 @@ import { ErrorMessage } from "../components/ErrorMessage";
 import { CausesField, PhoneField } from "../components/ProfileFields";
 import { Section } from "../components/Section";
 import { TextField } from "../components/TextField";
-import { formatPostalCode, joinPhone, splitPhone, type Phone } from "../format";
+import { formatAddress, formatPostalCode, joinPhone, splitPhone, type Phone } from "../format";
 import { useAction } from "../hooks/useAction";
 import { routes } from "../routes";
 import { institutionTypeLabels, institutionVerdictLabels } from "./institutionLabels";
@@ -87,17 +87,7 @@ function InstitutionSummary({
   institution,
   withAddress = true,
 }: Readonly<{ institution: InstitutionPreview; withAddress?: boolean }>) {
-  const address = [
-    institution.street,
-    institution.number,
-    institution.complement,
-    institution.neighborhood,
-    institution.city,
-    institution.state,
-    formatPostalCode(stringValue(institution.postal_code)),
-  ]
-    .filter(Boolean)
-    .join(", ");
+  const address = formatAddress(institution);
 
   return (
     <section
