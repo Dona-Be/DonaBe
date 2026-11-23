@@ -124,3 +124,24 @@ def test_an_address_part_missing_in_the_cnpj_must_be_filled_in_by_the_manager(
         "detail": "O endereço do CNPJ está incompleto. Informe rua, número, bairro e CEP."
     }
     assert accepted.json() == {**INSTITUTION, field: filled_in}
+
+
+@pytest.mark.parametrize(
+    ("nature", "institution_type"),
+    [
+        ({"id": 3069, "text": "Fundação Privada"}, "foundation"),
+        ({"id": 3220, "text": "Organização Religiosa"}, "religious_organization"),
+    ],
+)
+def test_the_legal_nature_decides_the_type_of_the_institution(
+    manager_client: TestClient,
+    companies: FakeCompanyLookup,
+    nature: dict[str, int | str],
+    institution_type: str,
+) -> None:
+    company = {**AACD["company"], "nature": nature}
+    companies.answer = company_from(AACD_TAX_ID, {**AACD, "company": company})
+
+    register(manager_client)
+
+    assert manager_client.get(MY_INSTITUTIONS).json()[0]["type"] == institution_type

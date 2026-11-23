@@ -1,5 +1,37 @@
 import { describe, expect, it } from "vitest";
-import { formatPostalCode, joinPhone, splitPhone, tidyPhone } from "../src/format";
+import {
+  formatAddress,
+  formatPhone,
+  formatPostalCode,
+  joinPhone,
+  splitPhone,
+  tidyPhone,
+} from "../src/format";
+
+describe("formatAddress", () => {
+  it("joins the parts that are filled in and formats the CEP", () => {
+    const address = {
+      street: "Rua A",
+      number: "10",
+      complement: null,
+      neighborhood: "Centro",
+      city: "São Paulo",
+      state: "SP",
+      postal_code: "01310200",
+    };
+
+    expect(formatAddress(address)).toBe("Rua A, 10, Centro, São Paulo, SP, 01310-200");
+  });
+});
+
+describe("formatPhone", () => {
+  it.each([
+    ["1120000000", "(11) 2000-0000"],
+    ["11999990000", "(11) 99999-0000"],
+  ])("shows %s as %s", (saved, shown) => {
+    expect(formatPhone(saved)).toBe(shown);
+  });
+});
 
 describe("formatPostalCode", () => {
   it.each([

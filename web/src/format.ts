@@ -3,6 +3,16 @@ export interface Phone {
   number: string;
 }
 
+interface Address {
+  street: string | null;
+  number: string | null;
+  complement: string | null;
+  neighborhood: string | null;
+  city: string;
+  state: string;
+  postal_code: string | null;
+}
+
 function onlyDigits(text: string): string {
   return text.replace(/\D/g, "");
 }
@@ -15,8 +25,21 @@ export function formatPostalCode(text: string): string {
   return onlyDigits(text).replace(/^(\d{5})(\d{3})$/, "$1-$2");
 }
 
+export function formatAddress(address: Address): string {
+  const { street, number, complement, neighborhood, city, state, postal_code } = address;
+  const postalCode = formatPostalCode(postal_code ?? "");
+  return [street, number, complement, neighborhood, city, state, postalCode]
+    .filter(Boolean)
+    .join(", ");
+}
+
 export function splitPhone(digits: string): Phone {
   return { areaCode: digits.slice(0, 2), number: formatPhoneNumber(digits.slice(2)) };
+}
+
+export function formatPhone(digits: string): string {
+  const { areaCode, number } = splitPhone(digits);
+  return `(${areaCode}) ${number}`;
 }
 
 export function tidyPhone(phone: Phone): Phone {

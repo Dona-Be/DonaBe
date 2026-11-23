@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
   DONOR,
@@ -21,6 +21,8 @@ describe("MyInstitutions", () => {
 
     expect(await screen.findByText("Aacd Ibirapuera")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Minhas instituições" })).toBeTruthy();
+    const page = screen.getByRole("link", { name: "Ver página" });
+    expect(page.getAttribute("href")).toBe("/instituicoes/1");
     await user.click(screen.getByRole("link", { name: "Editar" }));
 
     expect(await screen.findByRole("heading", { name: "Editar instituição" })).toBeTruthy();
@@ -28,7 +30,13 @@ describe("MyInstitutions", () => {
     expect(screen.getByText(INSTITUTION.legal_name)).toBeTruthy();
     expect(screen.queryByLabelText("CNPJ")).toBeNull();
     expect(field("CEP").value).toBe("04027-000");
-    expect(screen.getByText(/04027-000$/)).toBeTruthy();
+    const phone = screen.getByRole<HTMLInputElement>("textbox", {
+      name: /^Telefone/,
+      description: "Só os números. Pode ser WhatsApp.",
+    });
+    expect(phone.value).toBe("2000-0000");
+    const official = screen.getByRole("region", { name: "Dados oficiais do CNPJ" });
+    expect(within(official).queryByText(/Avenida Prof Ascendino Reis/)).toBeNull();
     expect(screen.getByRole("link", { name: "Cancelar" }).getAttribute("href")).toBe(
       "/instituicoes",
     );

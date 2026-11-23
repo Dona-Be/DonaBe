@@ -31,6 +31,17 @@ export interface Institution extends InstitutionPreview {
   facebook: string | null;
 }
 
+export interface OpenNeed {
+  id: number;
+  title: string;
+  description: string;
+  quantity: string | null;
+}
+
+export interface InstitutionWithNeeds extends Institution {
+  open_needs: OpenNeed[];
+}
+
 export interface InstitutionChanges {
   trade_name: string;
   description: string;
@@ -63,6 +74,10 @@ export function createInstitution(data: NewInstitution): Promise<Institution> {
 
 export function listMyInstitutions(): Promise<Institution[]> {
   return get<Institution[]>("/institutions/me");
+}
+
+export function getPublicInstitution(id: number): Promise<InstitutionWithNeeds> {
+  return get<InstitutionWithNeeds>(`/institutions/${String(id)}`);
 }
 
 export function updateInstitution(id: number, changes: InstitutionChanges): Promise<Institution> {

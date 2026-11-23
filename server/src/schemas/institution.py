@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src.domain.enums import Cause, InstitutionType, Verdict
 from src.schemas.text import StrictText
@@ -35,6 +35,11 @@ class InstitutionChanges(StrictText):
     city: NonBlankText | None = None
     state: str | None = Field(default=None, pattern=STATE_FORMAT)
     postal_code: str | None = None
+
+    @field_validator("causes")
+    @classmethod
+    def keep_each_cause_once(cls, causes: list[Cause] | None) -> list[Cause] | None:
+        return None if causes is None else list(dict.fromkeys(causes))
 
 
 class NewInstitution(InstitutionChanges):

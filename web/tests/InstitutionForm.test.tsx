@@ -42,6 +42,8 @@ describe("InstitutionForm", () => {
     expect(screen.getByText("Associação")).toBeTruthy();
     expect(screen.getByText("Organização sem fins lucrativos")).toBeTruthy();
     expect(screen.getByText(INSTITUTION_PREVIEW.reasons[2])).toBeTruthy();
+    const address = "Avenida Prof Ascendino Reis, 724, VL Clementino, São Paulo, SP, 04027-000";
+    expect(screen.getByText(address)).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "Continuar para os detalhes" }));
     const tradeName = screen.getByLabelText("Nome fantasia");
@@ -123,7 +125,7 @@ describe("InstitutionForm", () => {
     expect(requestsMade(fetchMock)).not.toContain("POST /api/institutions");
   });
 
-  it("shows why the registration was refused", async () => {
+  it("shows a refused registration and drops errors when changing steps", async () => {
     const detail = "Já existe uma instituição cadastrada com o CNPJ 60979457000111.";
     const { user } = await openDetails({
       "POST /api/institutions": { status: 409, body: { detail } },
@@ -133,5 +135,12 @@ describe("InstitutionForm", () => {
     await user.click(screen.getByRole("button", { name: "Cadastrar instituição" }));
 
     expect((await screen.findByRole("alert")).textContent).toBe(detail);
+    await user.click(screen.getByRole("button", { name: "Voltar" }));
+    expect(screen.queryByRole("alert")).toBeNull();
+    mockFetch({ [LOOKUP]: { status: 429, body: { detail: "Muitas tentativas." } } });
+    await user.click(screen.getByRole("button", { name: "Consultar CNPJ" }));
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Continuar para os detalhes" }));
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 });

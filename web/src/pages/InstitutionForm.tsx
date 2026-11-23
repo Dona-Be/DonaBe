@@ -13,7 +13,7 @@ import { ErrorMessage } from "../components/ErrorMessage";
 import { CausesField, PhoneField } from "../components/ProfileFields";
 import { Section } from "../components/Section";
 import { TextField } from "../components/TextField";
-import { formatPostalCode, joinPhone, splitPhone, type Phone } from "../format";
+import { formatAddress, formatPostalCode, joinPhone, splitPhone, type Phone } from "../format";
 import { useAction } from "../hooks/useAction";
 import { routes } from "../routes";
 import { institutionTypeLabels, institutionVerdictLabels } from "./institutionLabels";
@@ -83,18 +83,11 @@ function initialValues(
   };
 }
 
-function InstitutionSummary({ institution }: Readonly<{ institution: InstitutionPreview }>) {
-  const address = [
-    institution.street,
-    institution.number,
-    institution.complement,
-    institution.neighborhood,
-    institution.city,
-    institution.state,
-    formatPostalCode(stringValue(institution.postal_code)),
-  ]
-    .filter(Boolean)
-    .join(", ");
+function InstitutionSummary({
+  institution,
+  withAddress = true,
+}: Readonly<{ institution: InstitutionPreview; withAddress?: boolean }>) {
+  const address = formatAddress(institution);
 
   return (
     <section
@@ -119,10 +112,12 @@ function InstitutionSummary({ institution }: Readonly<{ institution: Institution
           <dt className="text-sm text-slate-600">Veredito</dt>
           <dd className="font-semibold">{institutionVerdictLabels[institution.verdict]}</dd>
         </div>
-        <div className="sm:col-span-2">
-          <dt className="text-sm text-slate-600">Endereço</dt>
-          <dd className="font-semibold">{address || "Endereço não informado"}</dd>
-        </div>
+        {withAddress && (
+          <div className="sm:col-span-2">
+            <dt className="text-sm text-slate-600">Endereço</dt>
+            <dd className="font-semibold">{address || "Endereço não informado"}</dd>
+          </div>
+        )}
       </dl>
       <div>
         <h3 className="font-bold">Motivos da classificação</h3>
@@ -210,7 +205,7 @@ function DetailsStep({
 }: Readonly<DetailsStepProps>) {
   return (
     <>
-      <InstitutionSummary institution={preview} />
+      <InstitutionSummary institution={preview} withAddress={!isEditing} />
       <form onSubmit={onSave} className="divide-y divide-slate-200 border-t border-slate-200">
         <Section title="Sobre a instituição">
           <div className="sm:col-span-2">
@@ -248,7 +243,11 @@ function DetailsStep({
           </div>
         </Section>
         <Section title="Contatos">
-          <PhoneField value={values.phone} onChange={(phone) => onValueChange("phone", phone)} />
+          <PhoneField
+            hint="Só os números. Pode ser WhatsApp."
+            value={values.phone}
+            onChange={(phone) => onValueChange("phone", phone)}
+          />
           <TextField
             label="E-mail de contato"
             optional
@@ -435,7 +434,7 @@ function InstitutionFormBody({
 
 export function InstitutionForm({ existing }: Readonly<{ existing?: Institution }>) {
   const navigate = useNavigate();
-  const { errorMessage, pending, run } = useAction();
+  const { errorMessage, setErrorMessage, pending, run } = useAction();
   const [cnpj, setCnpj] = useState(existing?.cnpj ?? "");
   const [preview, setPreview] = useState<InstitutionPreview | null>(existing ?? null);
   const [step, setStep] = useState<"lookup" | "details">(initialStep(existing));
@@ -478,6 +477,11 @@ export function InstitutionForm({ existing }: Readonly<{ existing?: Institution 
     setPreview(null);
   }
 
+  function goToStep(next: "lookup" | "details") {
+    setErrorMessage(null);
+    setStep(next);
+  }
+
   return (
     <section className="rounded border border-slate-200 bg-white p-6 sm:p-8">
       <h1 className="text-4xl font-extrabold">{titleFor(isEditing, step)}</h1>
@@ -491,9 +495,9 @@ export function InstitutionForm({ existing }: Readonly<{ existing?: Institution 
         errorMessage={errorMessage}
         onCnpjChange={changeCnpj}
         onLookup={handleLookup}
-        onContinue={() => setStep("details")}
+        onContinue={() => goToStep("details")}
         onSave={handleSave}
-        onBack={() => setStep("lookup")}
+        onBack={() => goToStep("lookup")}
         onValueChange={updateValue}
       />
     </section>

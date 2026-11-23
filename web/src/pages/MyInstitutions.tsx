@@ -6,6 +6,9 @@ import { friendlyMessage } from "../errors";
 import { routes } from "../routes";
 import { institutionTypeLabels, institutionVerdictLabels } from "./institutionLabels";
 
+const ACTION_CLASS =
+  "rounded-full border border-slate-500 px-5 py-3 text-center font-bold hover:bg-slate-50";
+
 export function MyInstitutions() {
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -68,12 +71,20 @@ export function MyInstitutions() {
                   </p>
                   {institution.description && <p>{institution.description}</p>}
                 </div>
-                <Link
-                  to={`${routes.institutions}/${String(institution.id)}/editar`}
-                  className="shrink-0 rounded-full border border-slate-500 px-5 py-3 text-center font-bold hover:bg-slate-50"
-                >
-                  Editar
-                </Link>
+                <div className="flex shrink-0 flex-wrap gap-3">
+                  <Link
+                    to={`${routes.institutions}/${String(institution.id)}`}
+                    className={ACTION_CLASS}
+                  >
+                    Ver página
+                  </Link>
+                  <Link
+                    to={`${routes.institutions}/${String(institution.id)}/editar`}
+                    className={ACTION_CLASS}
+                  >
+                    Editar
+                  </Link>
+                </div>
               </div>
             </li>
           ))}

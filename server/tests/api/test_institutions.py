@@ -70,6 +70,12 @@ def test_registration_stores_the_phone_and_the_cep_as_digits(manager_client: Tes
     assert response.json() == {**INSTITUTION, "phone": "11999990000", "postal_code": "01310200"}
 
 
+def test_registration_keeps_each_cause_once(manager_client: TestClient) -> None:
+    response = register(manager_client, causes=["health", "animals", "health"])
+
+    assert response.json() == {**INSTITUTION, "causes": ["health", "animals"]}
+
+
 def test_registration_trims_the_texts_and_a_blank_one_counts_as_empty(
     manager_client: TestClient,
 ) -> None:
