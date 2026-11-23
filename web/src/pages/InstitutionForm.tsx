@@ -83,7 +83,10 @@ function initialValues(
   };
 }
 
-function InstitutionSummary({ institution }: Readonly<{ institution: InstitutionPreview }>) {
+function InstitutionSummary({
+  institution,
+  withAddress = true,
+}: Readonly<{ institution: InstitutionPreview; withAddress?: boolean }>) {
   const address = [
     institution.street,
     institution.number,
@@ -119,10 +122,12 @@ function InstitutionSummary({ institution }: Readonly<{ institution: Institution
           <dt className="text-sm text-slate-600">Veredito</dt>
           <dd className="font-semibold">{institutionVerdictLabels[institution.verdict]}</dd>
         </div>
-        <div className="sm:col-span-2">
-          <dt className="text-sm text-slate-600">Endereço</dt>
-          <dd className="font-semibold">{address || "Endereço não informado"}</dd>
-        </div>
+        {withAddress && (
+          <div className="sm:col-span-2">
+            <dt className="text-sm text-slate-600">Endereço</dt>
+            <dd className="font-semibold">{address || "Endereço não informado"}</dd>
+          </div>
+        )}
       </dl>
       <div>
         <h3 className="font-bold">Motivos da classificação</h3>
@@ -210,7 +215,7 @@ function DetailsStep({
 }: Readonly<DetailsStepProps>) {
   return (
     <>
-      <InstitutionSummary institution={preview} />
+      <InstitutionSummary institution={preview} withAddress={!isEditing} />
       <form onSubmit={onSave} className="divide-y divide-slate-200 border-t border-slate-200">
         <Section title="Sobre a instituição">
           <div className="sm:col-span-2">

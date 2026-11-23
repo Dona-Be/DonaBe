@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
   DONOR,
@@ -28,7 +28,8 @@ describe("MyInstitutions", () => {
     expect(screen.getByText(INSTITUTION.legal_name)).toBeTruthy();
     expect(screen.queryByLabelText("CNPJ")).toBeNull();
     expect(field("CEP").value).toBe("04027-000");
-    expect(screen.getByText(/04027-000$/)).toBeTruthy();
+    const official = screen.getByRole("region", { name: "Dados oficiais do CNPJ" });
+    expect(within(official).queryByText(/Avenida Prof Ascendino Reis/)).toBeNull();
     expect(screen.getByRole("link", { name: "Cancelar" }).getAttribute("href")).toBe(
       "/instituicoes",
     );

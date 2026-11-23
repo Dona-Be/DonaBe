@@ -42,6 +42,8 @@ describe("InstitutionForm", () => {
     expect(screen.getByText("Associação")).toBeTruthy();
     expect(screen.getByText("Organização sem fins lucrativos")).toBeTruthy();
     expect(screen.getByText(INSTITUTION_PREVIEW.reasons[2])).toBeTruthy();
+    const address = "Avenida Prof Ascendino Reis, 724, VL Clementino, São Paulo, SP, 04027-000";
+    expect(screen.getByText(address)).toBeTruthy();
 
     await user.click(screen.getByRole("button", { name: "Continuar para os detalhes" }));
     const tradeName = screen.getByLabelText("Nome fantasia");
