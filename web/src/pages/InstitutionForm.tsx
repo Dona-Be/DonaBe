@@ -253,7 +253,11 @@ function DetailsStep({
           </div>
         </Section>
         <Section title="Contatos">
-          <PhoneField value={values.phone} onChange={(phone) => onValueChange("phone", phone)} />
+          <PhoneField
+            hint="Só os números. Pode ser WhatsApp."
+            value={values.phone}
+            onChange={(phone) => onValueChange("phone", phone)}
+          />
           <TextField
             label="E-mail de contato"
             optional
