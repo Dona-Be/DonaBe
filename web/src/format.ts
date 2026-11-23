@@ -37,6 +37,11 @@ export function splitPhone(digits: string): Phone {
   return { areaCode: digits.slice(0, 2), number: formatPhoneNumber(digits.slice(2)) };
 }
 
+export function formatPhone(digits: string): string {
+  const { areaCode, number } = splitPhone(digits);
+  return `(${areaCode}) ${number}`;
+}
+
 export function tidyPhone(phone: Phone): Phone {
   const digits = onlyDigits(phone.number);
   // A whole phone in the number field brings its own area code.

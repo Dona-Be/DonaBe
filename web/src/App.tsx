@@ -8,6 +8,7 @@ import { MyProfile } from "./pages/MyProfile";
 import { MyInstitutions } from "./pages/MyInstitutions";
 import { InstitutionForm } from "./pages/InstitutionForm";
 import { EditInstitution } from "./pages/EditInstitution";
+import { InstitutionPage } from "./pages/InstitutionPage";
 import { routes } from "./routes";
 
 export function App() {
@@ -17,6 +18,7 @@ export function App() {
         <Route element={<Layout />}>
           <Route path={routes.dashboard} element={<Dashboard />} />
           <Route path={routes.profile} element={<MyProfile />} />
+          <Route path={`${routes.institutions}/:id`} element={<InstitutionPage />} />
           <Route element={<ProtectedRoute only="manager" />}>
             <Route path={routes.institutions} element={<MyInstitutions />} />
             <Route path={routes.newInstitution} element={<InstitutionForm />} />
