@@ -435,7 +435,7 @@ function InstitutionFormBody({
 
 export function InstitutionForm({ existing }: Readonly<{ existing?: Institution }>) {
   const navigate = useNavigate();
-  const { errorMessage, pending, run } = useAction();
+  const { errorMessage, setErrorMessage, pending, run } = useAction();
   const [cnpj, setCnpj] = useState(existing?.cnpj ?? "");
   const [preview, setPreview] = useState<InstitutionPreview | null>(existing ?? null);
   const [step, setStep] = useState<"lookup" | "details">(initialStep(existing));
@@ -478,6 +478,11 @@ export function InstitutionForm({ existing }: Readonly<{ existing?: Institution 
     setPreview(null);
   }
 
+  function goToStep(next: "lookup" | "details") {
+    setErrorMessage(null);
+    setStep(next);
+  }
+
   return (
     <section className="rounded border border-slate-200 bg-white p-6 sm:p-8">
       <h1 className="text-4xl font-extrabold">{titleFor(isEditing, step)}</h1>
@@ -491,9 +496,9 @@ export function InstitutionForm({ existing }: Readonly<{ existing?: Institution 
         errorMessage={errorMessage}
         onCnpjChange={changeCnpj}
         onLookup={handleLookup}
-        onContinue={() => setStep("details")}
+        onContinue={() => goToStep("details")}
         onSave={handleSave}
-        onBack={() => setStep("lookup")}
+        onBack={() => goToStep("lookup")}
         onValueChange={updateValue}
       />
     </section>
