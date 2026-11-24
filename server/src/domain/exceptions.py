@@ -102,3 +102,8 @@ class NotNeedManagerError(DomainError):
 class NeedNotOpenError(DomainError):
     def __init__(self) -> None:
         super().__init__("Apenas necessidades abertas podem mudar de status.")
+
+
+class InvalidSearchStrategyError(DomainError):
+    def __init__(self, strategy: str) -> None:
+        super().__init__(f"A estratégia de busca {strategy} não é válida.")
