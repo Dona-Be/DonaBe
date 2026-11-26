@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
 
-from sqlalchemy import func, literal, or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.sql import Select
 
 from src.domain.exceptions import InvalidSearchStrategyError
@@ -84,12 +84,12 @@ class CauseTextStrategy(SearchStrategy):
         if filters.causes:
             query = query.where(Institution.causes.overlap(list(filters.causes)))
         if filters.name and filters.name.strip():
-            term = _escape_like(filters.name.strip())
-            pattern = func.unaccent(func.lower(literal(f"%{term}%")))
-            legal_name = func.unaccent(func.lower(Institution.legal_name))
-            trade_name = func.unaccent(func.lower(func.coalesce(Institution.trade_name, "")))
+            # strpos, not LIKE: unaccent can map fullwidth signs to % and _
+            term = func.lower(func.unaccent(filters.name.strip()))
+            legal_name = func.lower(func.unaccent(Institution.legal_name))
+            trade_name = func.lower(func.unaccent(Institution.trade_name))
             query = query.where(
-                or_(legal_name.like(pattern, escape="\\"), trade_name.like(pattern, escape="\\"))
+                or_(func.strpos(legal_name, term) > 0, func.strpos(trade_name, term) > 0)
             )
         rows = self._repository.search(query.order_by(distance, Institution.id), page)
         return [row[0] for row in rows]
@@ -115,7 +115,3 @@ class InstitutionSearchService:
         except KeyError as error:
             raise InvalidSearchStrategyError(strategy_name) from error
         return strategy.search(donor, filters, page)
-
-
-def _escape_like(term: str) -> str:
-    return term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")

@@ -113,8 +113,8 @@ def test_cause_text_uses_gin_array_overlap_and_accent_insensitive_name_search() 
         Cause.HEALTH,
         Cause.ANIMALS,
     ]
-    assert "unaccent(lower(institutions.legal_name))" in sql
-    assert "unaccent(lower(coalesce(institutions.trade_name" in sql
+    assert "strpos(lower(unaccent(institutions.legal_name))" in sql
+    assert "strpos(lower(unaccent(institutions.trade_name))" in sql
     assert repository.page == SearchPage()
     assert results == [first, second]
 
