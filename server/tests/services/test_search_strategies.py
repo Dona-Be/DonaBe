@@ -71,7 +71,7 @@ def test_nearest_strategy_filters_to_radius_orders_by_distance_and_pages() -> No
     sql = compiled_query(repository)
     assert "ST_DWithin" in sql
     assert "ORDER BY ST_Distance" in sql
-    assert "institutions.verdict NOT IN" not in sql
+    assert "institutions.verdict NOT IN" in sql
     assert repository.page == page
     assert results == [closest, farther]
 

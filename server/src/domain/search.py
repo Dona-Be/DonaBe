@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 
-from src.domain.enums import Cause
+from src.domain.enums import Cause, Verdict
+
+HIDDEN_VERDICTS = (Verdict.INACTIVE, Verdict.UNLIKELY)
 
 
 @dataclass(frozen=True)

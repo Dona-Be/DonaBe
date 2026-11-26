@@ -5,7 +5,7 @@ from sqlalchemy import func, literal, or_, select
 from sqlalchemy.sql import Select
 
 from src.domain.exceptions import InvalidSearchStrategyError
-from src.domain.search import SearchFilters, SearchPage
+from src.domain.search import HIDDEN_VERDICTS, SearchFilters, SearchPage
 from src.models.institution import Institution
 from src.models.user import Donor
 from src.repositories.institutions import InstitutionRepository
@@ -35,6 +35,7 @@ class SearchStrategy(ABC):
         donor_location = select(Donor.location).where(Donor.id == donor.id).scalar_subquery()
         distance = func.ST_Distance(Institution.location, donor_location)
         query = select(Institution, distance.label("distance_meters")).where(
+            Institution.verdict.not_in(HIDDEN_VERDICTS),
             Institution.location.is_not(None),
             func.ST_DWithin(
                 Institution.location, donor_location, filters.radius_km * METERS_PER_KM
