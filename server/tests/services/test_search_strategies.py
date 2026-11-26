@@ -13,6 +13,7 @@ from src.services.search_strategies import (
     CauseTextStrategy,
     InstitutionSearchService,
     NearestStrategy,
+    SearchResult,
 )
 
 DONOR_ID = 12
@@ -67,7 +68,7 @@ def test_nearest_strategy_asks_for_the_radius_and_page_without_text_filters() ->
     results = NearestStrategy(repository).search(make_donor(), FILTERS, page)
 
     assert repository.calls == [(DONOR_ID, RADIUS_KM, page, (), None)]
-    assert results == [closest, farther]
+    assert results == [SearchResult(closest, 0.8), SearchResult(farther, 1.2)]
 
 
 def test_best_match_scores_all_candidates_sorts_and_then_pages() -> None:
@@ -84,8 +85,15 @@ def test_best_match_scores_all_candidates_sorts_and_then_pages() -> None:
     second_page = strategy.search(donor, FILTERS, SearchPage(number=2, size=2))
 
     # 45 points at 3 km and at 7 km (the nearer wins the tie), 40 at 0.5 km
-    assert first_page == [nonprofit_3km, charity_7km]
-    assert second_page == [other_cause_500m]
+    assert [result.institution for result in first_page] == [nonprofit_3km, charity_7km]
+    assert second_page == [
+        SearchResult(
+            other_cause_500m,
+            0.5,
+            40,
+            ("Fica a até 2 km de você", "CNPJ verificado: entidade sem fins lucrativos"),
+        )
+    ]
     assert repository.calls[0] == (DONOR_ID, RADIUS_KM, None, (), None)
 
 
@@ -96,7 +104,7 @@ def test_cause_text_passes_its_causes_and_name_to_the_repository() -> None:
     results = CauseTextStrategy(repository).search(make_donor(), FILTERS, FIRST_PAGE)
 
     assert repository.calls == [(DONOR_ID, RADIUS_KM, FIRST_PAGE, (Cause.HEALTH,), "lar")]
-    assert results == [institution]
+    assert results == [SearchResult(institution, 0.8)]
 
 
 @pytest.mark.parametrize(
