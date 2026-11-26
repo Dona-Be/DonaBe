@@ -5,9 +5,7 @@ from src.connectors.routing import RoutePlanner
 from src.connectors.schemas import Address, Coordinates, Route
 from src.domain.cep import normalize_cep
 from src.domain.exceptions import CepWithoutCoordinatesError
-from src.models.institution import WGS84_SRID
-
-METERS_PER_KM = 1000
+from src.models.institution import METERS_PER_KM, WGS84_SRID
 
 
 class LocationService:

@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from src.models.user import Manager
 
 WGS84_SRID = 4326
+METERS_PER_KM = 1000
 CAUSES_INDEX = "ix_institutions_causes"
 EMPTY_LIST = "{}"
 OPTIONAL_TEXTS = (

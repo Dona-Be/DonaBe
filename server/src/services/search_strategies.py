@@ -6,7 +6,7 @@ from sqlalchemy.sql import Select
 
 from src.domain.exceptions import InvalidSearchStrategyError
 from src.domain.search import HIDDEN_VERDICTS, SearchFilters, SearchPage
-from src.models.institution import Institution
+from src.models.institution import METERS_PER_KM, Institution
 from src.models.user import Donor
 from src.repositories.institutions import InstitutionRepository
 from src.services.match_score import (
@@ -19,7 +19,6 @@ from src.services.match_score import (
 STRATEGY_NEAREST = "nearest"
 STRATEGY_BEST_MATCH = "best_match"
 STRATEGY_CAUSE_TEXT = "cause_text"
-METERS_PER_KM = 1000
 
 
 class SearchStrategy(ABC):
