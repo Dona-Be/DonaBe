@@ -9,9 +9,6 @@ from src.domain.exceptions import InvalidSearchStrategyError
 from src.domain.search import SearchFilters, SearchPage
 from src.models.user import Donor
 from src.services.search_strategies import (
-    STRATEGY_BEST_MATCH,
-    STRATEGY_CAUSE_TEXT,
-    STRATEGY_NEAREST,
     BestMatchStrategy,
     CauseTextStrategy,
     InstitutionSearchService,
@@ -19,6 +16,9 @@ from src.services.search_strategies import (
 )
 
 DONOR_ID = 12
+RADIUS_KM = 8
+FIRST_PAGE = SearchPage()
+FILTERS = SearchFilters(radius_km=RADIUS_KM, causes=(Cause.HEALTH,), name="lar")
 
 
 class FakeInstitutionRepository:
@@ -58,57 +58,63 @@ def make_institution(
     )
 
 
-def test_nearest_strategy_filters_to_radius_orders_by_distance_and_pages() -> None:
+def test_nearest_strategy_asks_for_the_radius_and_page_without_text_filters() -> None:
     closest = make_institution(1)
     farther = make_institution(2)
     repository = FakeInstitutionRepository([(closest, 0.8), (farther, 1.2)])
-    strategy = NearestStrategy(repository)
     page = SearchPage(number=1, size=2)
 
-    results = strategy.search(make_donor(), SearchFilters(radius_km=4), page)
+    results = NearestStrategy(repository).search(make_donor(), FILTERS, page)
 
-    assert repository.calls == [(DONOR_ID, 4, page, (), None)]
+    assert repository.calls == [(DONOR_ID, RADIUS_KM, page, (), None)]
     assert results == [closest, farther]
 
 
 def test_best_match_scores_all_candidates_sorts_and_then_pages() -> None:
-    preferred = make_institution(1, Cause.ANIMALS)
-    likely = make_institution(2)
-    nonprofit = make_institution(3, verdict=Verdict.NONPROFIT)
-    repository = FakeInstitutionRepository([(nonprofit, 7), (likely, 1), (preferred, 1)])
+    charity_7km = make_institution(1, Cause.ANIMALS)
+    nonprofit_3km = make_institution(2, Cause.ANIMALS, verdict=Verdict.NONPROFIT)
+    other_cause_500m = make_institution(3, Cause.HEALTH, verdict=Verdict.NONPROFIT)
+    repository = FakeInstitutionRepository(
+        [(other_cause_500m, 0.5), (nonprofit_3km, 3), (charity_7km, 7)]
+    )
     strategy = BestMatchStrategy(repository)
+    donor = make_donor(Cause.ANIMALS)
 
-    results = strategy.search(
-        make_donor(Cause.ANIMALS), SearchFilters(), SearchPage(number=1, size=2)
-    )
+    first_page = strategy.search(donor, FILTERS, SearchPage(number=1, size=2))
+    second_page = strategy.search(donor, FILTERS, SearchPage(number=2, size=2))
 
-    assert repository.calls == [(DONOR_ID, 10, None, (), None)]
-    assert results == [preferred, likely]
-
-
-def test_cause_text_uses_gin_array_overlap_and_accent_insensitive_name_search() -> None:
-    first = make_institution(1, Cause.HEALTH)
-    second = make_institution(2, Cause.ANIMALS)
-    repository = FakeInstitutionRepository([(first, 0.8), (second, 1.2)])
-    strategy = CauseTextStrategy(repository)
-    causes = (Cause.HEALTH, Cause.ANIMALS)
-
-    results = strategy.search(
-        make_donor(), SearchFilters(causes=causes, name="  SAÚDE  "), SearchPage()
-    )
-
-    assert repository.calls == [(DONOR_ID, 10, SearchPage(), causes, "  SAÚDE  ")]
-    assert results == [first, second]
+    # 45 points at 3 km and at 7 km (the nearer wins the tie), 40 at 0.5 km
+    assert first_page == [nonprofit_3km, charity_7km]
+    assert second_page == [other_cause_500m]
+    assert repository.calls[0] == (DONOR_ID, RADIUS_KM, None, (), None)
 
 
-def test_registry_selects_each_strategy_by_registered_name() -> None:
+def test_cause_text_passes_its_causes_and_name_to_the_repository() -> None:
+    institution = make_institution(1, Cause.HEALTH)
+    repository = FakeInstitutionRepository([(institution, 0.8)])
+
+    results = CauseTextStrategy(repository).search(make_donor(), FILTERS, FIRST_PAGE)
+
+    assert repository.calls == [(DONOR_ID, RADIUS_KM, FIRST_PAGE, (Cause.HEALTH,), "lar")]
+    assert results == [institution]
+
+
+@pytest.mark.parametrize(
+    ("name", "call"),
+    [
+        ("nearest", (DONOR_ID, RADIUS_KM, FIRST_PAGE, (), None)),
+        ("best_match", (DONOR_ID, RADIUS_KM, None, (), None)),
+        ("cause_text", (DONOR_ID, RADIUS_KM, FIRST_PAGE, (Cause.HEALTH,), "lar")),
+    ],
+)
+def test_registry_selects_each_strategy_by_registered_name(
+    name: str, call: tuple[Any, ...]
+) -> None:
     repository = FakeInstitutionRepository()
-    service = InstitutionSearchService(repository)
 
-    for name in (STRATEGY_NEAREST, STRATEGY_BEST_MATCH, STRATEGY_CAUSE_TEXT):
-        service.search(make_donor(), name, SearchFilters(), SearchPage())
+    InstitutionSearchService(repository).search(make_donor(), name, FILTERS, FIRST_PAGE)
 
-    assert len(repository.calls) == 3
+    assert repository.calls == [call]
 
 
 def test_registry_rejects_unknown_name_with_an_error_mapped_to_422() -> None:
