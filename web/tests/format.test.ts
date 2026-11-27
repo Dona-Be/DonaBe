@@ -112,7 +112,14 @@ describe("formatRelativeTime", () => {
   });
 
   it("shows the date after a week", () => {
-    expect(formatRelativeTime("2026-11-10T12:00:00Z", now)).toBe("10/11/2026");
+    const weekAgo = new Date(2026, 10, 18, 12).toISOString();
+    expect(formatRelativeTime(weekAgo, new Date(2026, 10, 25, 12))).toBe("18/11/2026");
+    expect(formatRelativeTime(weekAgo, new Date(2026, 10, 24, 12))).toBe("há 6 dias");
+  });
+
+  it("counts the days by the calendar", () => {
+    const tuesdayNight = new Date(2026, 10, 24, 23).toISOString();
+    expect(formatRelativeTime(tuesdayNight, new Date(2026, 10, 26, 5))).toBe("anteontem");
   });
 
   it("treats a date slightly in the future as now", () => {
