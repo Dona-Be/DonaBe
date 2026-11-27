@@ -193,17 +193,11 @@ function NotificationList({
 
 interface NotificationPanelProps {
   intentPage: string;
-  unreadCount: number;
-  onUnreadCountChange: (change: (count: number) => number) => void;
+  onRead: () => void;
   onClose: () => void;
 }
 
-function NotificationPanel({
-  intentPage,
-  unreadCount,
-  onUnreadCountChange,
-  onClose,
-}: Readonly<NotificationPanelProps>) {
+function NotificationPanel({ intentPage, onRead, onClose }: Readonly<NotificationPanelProps>) {
   const { notifications, setNotifications, hasMore, loadError, loadMore } = useNotificationPages();
   const { errorMessage, pending, run } = useAction();
 
@@ -213,7 +207,7 @@ function NotificationPanel({
       setNotifications((current) =>
         (current ?? []).map((item) => (item.id === notification.id ? markedAsRead(item) : item)),
       );
-      onUnreadCountChange((count) => Math.max(0, count - 1));
+      onRead();
     });
   }
 
@@ -221,14 +215,14 @@ function NotificationPanel({
     run(async () => {
       await markAllNotificationsAsRead();
       setNotifications((current) => (current ?? []).map(markedAsRead));
-      onUnreadCountChange(() => 0);
+      onRead();
     });
   }
 
   function open(notification: Notification) {
     if (notification.read_at === null) {
       markNotificationAsRead(notification.id)
-        .then(() => onUnreadCountChange((count) => Math.max(0, count - 1)))
+        .then(onRead)
         .catch(() => undefined);
     }
     onClose();
@@ -244,7 +238,7 @@ function NotificationPanel({
         <h2 className="font-bold">Notificações</h2>
         <button
           type="button"
-          disabled={pending || unreadCount === 0}
+          disabled={pending || !notifications?.some(({ read_at }) => read_at === null)}
           onClick={markAllAsRead}
           className={TEXT_BUTTON_CLASS}
         >
@@ -284,7 +278,7 @@ function NotificationPanel({
 
 export function NotificationBell() {
   const { role } = useAuth();
-  const { count, changeCount, refresh } = useUnreadCount();
+  const { count, refresh } = useUnreadCount();
   const [open, setOpen] = useState(false);
   const container = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
@@ -325,12 +319,7 @@ export function NotificationBell() {
         )}
       </button>
       {open && (
-        <NotificationPanel
-          intentPage={intentPageByRole[role]}
-          unreadCount={count}
-          onUnreadCountChange={changeCount}
-          onClose={close}
-        />
+        <NotificationPanel intentPage={intentPageByRole[role]} onRead={refresh} onClose={close} />
       )}
     </div>
   );

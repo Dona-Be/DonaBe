@@ -59,7 +59,11 @@ const DATE = new Intl.DateTimeFormat("pt-BR");
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
-const WEEK = 7 * DAY;
+const DAYS_IN_WEEK = 7;
+
+function midnight(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
 
 export function formatRelativeTime(isoDate: string, now: Date = new Date()): string {
   const date = new Date(isoDate);
@@ -67,6 +71,7 @@ export function formatRelativeTime(isoDate: string, now: Date = new Date()): str
   if (elapsed < MINUTE) return "agora";
   if (elapsed < HOUR) return RELATIVE_TIME.format(-Math.floor(elapsed / MINUTE), "minute");
   if (elapsed < DAY) return RELATIVE_TIME.format(-Math.floor(elapsed / HOUR), "hour");
-  if (elapsed < WEEK) return RELATIVE_TIME.format(-Math.floor(elapsed / DAY), "day");
+  const days = Math.round((midnight(now) - midnight(date)) / DAY);
+  if (days < DAYS_IN_WEEK) return RELATIVE_TIME.format(-days, "day");
   return DATE.format(date);
 }

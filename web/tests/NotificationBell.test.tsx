@@ -1,7 +1,6 @@
 import { act, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { Notification } from "../src/api/notifications";
-import { UNREAD_POLL_INTERVAL_MS } from "../src/hooks/useUnreadCount";
 import { MANAGER, mockFetch, renderApp, requestsMade, USER } from "./helpers";
 
 const DONOR_SESSION = { "GET /api/profiles/me": { body: USER } };
@@ -41,17 +40,16 @@ function count(value: number) {
   return { body: { count: value } };
 }
 
-async function openBell(responses: Parameters<typeof mockFetch>[0], session = DONOR_SESSION) {
-  const fetchMock = mockFetch({ ...session, ...responses });
+type Responses = Parameters<typeof mockFetch>[0];
+
+async function openBell(extra: Responses, session = DONOR_SESSION) {
+  const responses: Responses = { ...session, ...extra };
+  const fetchMock = mockFetch(responses);
   const user = renderApp("/");
   await user.click(await screen.findByRole("button", { name: /^Notificações/ }));
   const panel = await screen.findByRole("region", { name: "Notificações" });
-  return { fetchMock, user, panel };
+  return { fetchMock, user, panel, responses };
 }
-
-afterEach(() => {
-  vi.useRealTimers();
-});
 
 describe("NotificationBell", () => {
   it("shows how many notifications are unread", async () => {
@@ -124,32 +122,34 @@ describe("NotificationBell", () => {
 
   it("marks one notification as read", async () => {
     const markOne = `POST /api/notifications/${String(UNREAD.id)}/read`;
-    const { fetchMock, user, panel } = await openBell({
+    const { fetchMock, user, panel, responses } = await openBell({
       [UNREAD_COUNT]: count(1),
       [FIRST_PAGE]: { body: [UNREAD, READ] },
       [markOne]: { status: 204 },
     });
+    responses[UNREAD_COUNT] = count(0);
 
     await user.click(await within(panel).findByRole("button", { name: "Marcar como lida" }));
 
     expect(await screen.findByRole("button", { name: "Notificações" })).toBeTruthy();
     expect(within(panel).queryByRole("button", { name: "Marcar como lida" })).toBeNull();
-    expect(requestsMade(fetchMock)).toContain(markOne);
+    expect(requestsMade(fetchMock).slice(-2)).toEqual([markOne, UNREAD_COUNT]);
   });
 
   it("marks all notifications as read", async () => {
-    const { fetchMock, user, panel } = await openBell({
+    const { fetchMock, user, panel, responses } = await openBell({
       [UNREAD_COUNT]: count(2),
       [FIRST_PAGE]: { body: [UNREAD, notification(3)] },
       [READ_ALL]: { status: 204 },
     });
     await within(panel).findAllByRole("listitem");
+    responses[UNREAD_COUNT] = count(0);
 
     await user.click(within(panel).getByRole("button", { name: "Marcar todas como lidas" }));
 
     expect(await screen.findByRole("button", { name: "Notificações" })).toBeTruthy();
     expect(within(panel).queryByText(/Não lida/)).toBeNull();
-    expect(requestsMade(fetchMock)).toContain(READ_ALL);
+    expect(requestsMade(fetchMock).slice(-2)).toEqual([READ_ALL, UNREAD_COUNT]);
   });
 
   it("shows the error when marking as read fails", async () => {
@@ -226,32 +226,23 @@ describe("NotificationBell", () => {
     expect(screen.queryByRole("region", { name: "Notificações" })).toBeNull();
   });
 
-  it("checks the count again from time to time", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    const responses = { ...DONOR_SESSION, [UNREAD_COUNT]: count(0) };
-    mockFetch(responses);
-    renderApp("/");
-    await screen.findByRole("button", { name: "Notificações" });
-
-    responses[UNREAD_COUNT] = count(2);
-    await act(() => vi.advanceTimersByTimeAsync(UNREAD_POLL_INTERVAL_MS));
-
-    expect(await screen.findByRole("button", { name: "Notificações, 2 não lidas" })).toBeTruthy();
-  });
-
   it("ignores a count that left before marking everything as read", async () => {
-    const { fetchMock, user, panel } = await openBell({
+    const responses = {
+      ...DONOR_SESSION,
       [UNREAD_COUNT]: count(2),
       [FIRST_PAGE]: { body: [UNREAD, notification(3)] },
       [READ_ALL]: { status: 204 },
-    });
-    await within(panel).findAllByRole("listitem");
+    };
+    const fetchMock = mockFetch(responses);
+    const user = renderApp("/");
+    const bell = await screen.findByRole("button", { name: "Notificações, 2 não lidas" });
     let answerOldCount: (response: Response) => void = () => undefined;
     fetchMock.mockReturnValueOnce(new Promise((resolve) => (answerOldCount = resolve)));
-    act(() => {
-      document.dispatchEvent(new Event("visibilitychange"));
-    });
 
+    await user.click(bell);
+    const panel = await screen.findByRole("region", { name: "Notificações" });
+    await within(panel).findAllByRole("listitem");
+    responses[UNREAD_COUNT] = count(0);
     await user.click(within(panel).getByRole("button", { name: "Marcar todas como lidas" }));
     await screen.findByRole("button", { name: "Notificações" });
     await act(async () => {
@@ -260,19 +251,5 @@ describe("NotificationBell", () => {
     });
 
     expect(screen.getByRole("button", { name: "Notificações" })).toBeTruthy();
-  });
-
-  it("checks the count again when the page becomes visible", async () => {
-    const responses = { ...DONOR_SESSION, [UNREAD_COUNT]: count(0) };
-    mockFetch(responses);
-    renderApp("/");
-    await screen.findByRole("button", { name: "Notificações" });
-
-    responses[UNREAD_COUNT] = count(1);
-    act(() => {
-      document.dispatchEvent(new Event("visibilitychange"));
-    });
-
-    expect(await screen.findByRole("button", { name: "Notificações, 1 não lida" })).toBeTruthy();
   });
 });

@@ -18,7 +18,7 @@ export function Layout() {
           <Link to={routes.dashboard} className="text-xl">
             <Logo />
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
             <nav className="flex gap-3">
               <Link to={routes.dashboard} className="hover:underline">
                 Início
