@@ -2,11 +2,13 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
+from geoalchemy2 import WKTElement
 
 from src.api.error_handlers import status_for
 from src.domain.enums import Cause, SearchStrategyName, Verdict
-from src.domain.exceptions import InvalidSearchStrategyError
+from src.domain.exceptions import DonorWithoutLocationError, InvalidSearchStrategyError
 from src.domain.search import SearchFilters, SearchPage
+from src.models.institution import WGS84_SRID
 from src.models.user import Donor
 from src.services.search_strategies import (
     BestMatchStrategy,
@@ -43,7 +45,12 @@ class FakeInstitutionRepository:
 
 
 def make_donor(*causes: Cause) -> Donor:
-    return Donor(id=DONOR_ID, postal_code="01310200", preferred_causes=list(causes))
+    return Donor(
+        id=DONOR_ID,
+        postal_code="01310200",
+        location=WKTElement("POINT(-46.63 -23.55)", srid=WGS84_SRID),
+        preferred_causes=list(causes),
+    )
 
 
 def make_institution(
@@ -141,3 +148,16 @@ def test_registry_rejects_unknown_name_with_an_error_mapped_to_422() -> None:
         service.search(make_donor(), "unknown", SearchFilters(), SearchPage())
 
     assert status_for(error.value) == 422
+
+
+@pytest.mark.parametrize("name", list(SearchStrategyName))
+def test_refuses_a_donor_without_location_before_searching(name: SearchStrategyName) -> None:
+    repository = FakeInstitutionRepository()
+    donor = make_donor()
+    donor.location = None
+
+    with pytest.raises(DonorWithoutLocationError, match="Informe seu CEP") as error:
+        InstitutionSearchService(repository).search(donor, name, FILTERS, FIRST_PAGE)
+
+    assert status_for(error.value) == 422
+    assert repository.calls == []

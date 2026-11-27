@@ -3,7 +3,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from src.domain.enums import SearchStrategyName
-from src.domain.exceptions import InvalidSearchStrategyError
+from src.domain.exceptions import DonorWithoutLocationError, InvalidSearchStrategyError
 from src.domain.search import SearchFilters, SearchPage
 from src.models.institution import Institution
 from src.models.user import Donor
@@ -87,4 +87,7 @@ class InstitutionSearchService:
             strategy = self._strategies[strategy_name]
         except KeyError as error:
             raise InvalidSearchStrategyError(strategy_name) from error
+        # Without a location the radius has no center, and the search would come back empty.
+        if donor.location is None:
+            raise DonorWithoutLocationError
         return strategy.search(donor, filters, page)

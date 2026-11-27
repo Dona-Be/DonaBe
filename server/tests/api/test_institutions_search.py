@@ -214,6 +214,21 @@ def test_only_cause_text_uses_causes_and_q(
     assert names(response) == expected
 
 
+@pytest.mark.parametrize("strategy", ["nearest", "best_match", "cause_text"])
+def test_refuses_a_donor_without_location(
+    client: TestClient, db_session: Session, strategy: str
+) -> None:
+    db_session.add(Donor.from_profile(profile(USER_EMAIL)))
+    db_session.commit()
+
+    response = log_in(client).get(SEARCH, params={"strategy": strategy})
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": "Informe seu CEP no perfil para buscar instituições perto de você."
+    }
+
+
 def test_requires_a_logged_in_user(client: TestClient) -> None:
     assert client.get(SEARCH).status_code == 401
 
