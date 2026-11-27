@@ -1,9 +1,10 @@
-from typing import Annotated
+from typing import Annotated, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src.domain.enums import Cause, InstitutionType, Verdict
 from src.schemas.text import StrictText
+from src.services.search_strategies import SearchResult
 
 MAX_TEXT_LENGTH = 200
 MAX_DESCRIPTION_LENGTH = 2000
@@ -86,3 +87,31 @@ class OpenNeed(BaseModel):
 
 class InstitutionPage(PublicInstitution):
     open_needs: list[OpenNeed]
+
+
+class InstitutionSearchResult(BaseModel):
+    id: int
+    type: InstitutionType
+    legal_name: str
+    trade_name: str | None
+    causes: list[Cause]
+    verdict: Verdict
+    distance_km: float
+    score: int | None
+    # Not "reasons": an institution already has reasons, the ones behind its CNPJ verdict.
+    match_reasons: list[str]
+
+    @classmethod
+    def from_result(cls, result: SearchResult) -> Self:
+        institution = result.institution
+        return cls(
+            id=institution.id,
+            type=institution.type,
+            legal_name=institution.legal_name,
+            trade_name=institution.trade_name,
+            causes=institution.causes,
+            verdict=institution.verdict,
+            distance_km=result.distance_km,
+            score=result.score,
+            match_reasons=list(result.reasons),
+        )

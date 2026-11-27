@@ -26,6 +26,7 @@ from src.services.locations import LocationService
 from src.services.needs import NeedService
 from src.services.notifications import NotificationService
 from src.services.profiles import ProfileService
+from src.services.search_strategies import InstitutionSearchService
 from src.services.users import UserService
 
 
@@ -118,6 +119,17 @@ def get_institution_service(
 
 
 InstitutionServiceDep = Annotated[InstitutionService, Depends(get_institution_service)]
+
+
+def get_institution_search_service(
+    repository: Annotated[InstitutionRepository, Depends(get_institution_repository)],
+) -> InstitutionSearchService:
+    return InstitutionSearchService(repository)
+
+
+InstitutionSearchServiceDep = Annotated[
+    InstitutionSearchService, Depends(get_institution_search_service)
+]
 
 
 def get_need_repository(session: Annotated[Session, Depends(get_db_session)]) -> NeedRepository:

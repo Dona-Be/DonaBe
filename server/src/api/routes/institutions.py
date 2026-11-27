@@ -1,14 +1,24 @@
-from fastapi import APIRouter, Depends, status
+from typing import Annotated
 
-from src.api.authentication import CurrentManager, get_current_manager
-from src.api.dependencies import InstitutionServiceDep
-from src.api.parameters import DatabaseId
+from fastapi import APIRouter, Depends, Query, status
+
+from src.api.authentication import CurrentDonor, CurrentManager, get_current_manager
+from src.api.dependencies import InstitutionSearchServiceDep, InstitutionServiceDep
+from src.api.parameters import MAX_INTEGER, DatabaseId
 from src.api.rate_limits import limit_cep_lookups, limit_cnpj_lookups
+from src.domain.enums import SearchStrategyName
+from src.domain.search import (
+    DEFAULT_SEARCH_RADIUS_KM,
+    MAX_SEARCH_RADIUS_KM,
+    SearchFilters,
+    SearchPage,
+)
 from src.models.institution import Institution
 from src.schemas.institution import (
     InstitutionChanges,
     InstitutionPage,
     InstitutionPreview,
+    InstitutionSearchResult,
     NewInstitution,
     PublicInstitution,
 )
@@ -49,6 +59,30 @@ def list_my_institutions(
     manager: CurrentManager, service: InstitutionServiceDep
 ) -> list[Institution]:
     return service.list_of(manager)
+
+
+# Declared before /{institution_id}, or "search" would be read as an id.
+@router.get(
+    "/search",
+    summary="Search the institutions near you",
+    description=(
+        "20 per page, within max_distance_km of your location. nearest orders by distance; "
+        "best_match orders by score and explains it in match_reasons; cause_text orders by "
+        "distance. score is null and match_reasons is empty outside best_match."
+    ),
+)
+def search_institutions(
+    donor: CurrentDonor,
+    service: InstitutionSearchServiceDep,
+    strategy: SearchStrategyName = SearchStrategyName.NEAREST,
+    max_distance_km: Annotated[
+        float, Query(gt=0, le=MAX_SEARCH_RADIUS_KM)
+    ] = DEFAULT_SEARCH_RADIUS_KM,
+    page: Annotated[int, Query(ge=1, le=MAX_INTEGER)] = 1,
+) -> list[InstitutionSearchResult]:
+    filters = SearchFilters(radius_km=max_distance_km)
+    results = service.search(donor, strategy, filters, SearchPage(page))
+    return [InstitutionSearchResult.from_result(result) for result in results]
 
 
 @router.get(

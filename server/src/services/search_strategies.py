@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from dataclasses import dataclass
 
+from src.domain.enums import SearchStrategyName
 from src.domain.exceptions import InvalidSearchStrategyError
 from src.domain.search import SearchFilters, SearchPage
 from src.models.institution import Institution
@@ -13,10 +14,6 @@ from src.services.match_score import (
     ProximityDecorator,
     VerifiedCnpjDecorator,
 )
-
-STRATEGY_NEAREST = "nearest"
-STRATEGY_BEST_MATCH = "best_match"
-STRATEGY_CAUSE_TEXT = "cause_text"
 
 
 @dataclass(frozen=True)
@@ -74,9 +71,9 @@ class CauseTextStrategy(SearchStrategy):
 class InstitutionSearchService:
     def __init__(self, repository: InstitutionRepository) -> None:
         self._strategies: Mapping[str, SearchStrategy] = {
-            STRATEGY_NEAREST: NearestStrategy(repository),
-            STRATEGY_BEST_MATCH: BestMatchStrategy(repository),
-            STRATEGY_CAUSE_TEXT: CauseTextStrategy(repository),
+            SearchStrategyName.NEAREST: NearestStrategy(repository),
+            SearchStrategyName.BEST_MATCH: BestMatchStrategy(repository),
+            SearchStrategyName.CAUSE_TEXT: CauseTextStrategy(repository),
         }
 
     def search(
