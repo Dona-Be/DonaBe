@@ -3,11 +3,13 @@ from typing import Any
 import pytest
 from fastapi.testclient import TestClient
 from geoalchemy2 import WKTElement
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from src.api.authentication import DONORS_ONLY_MESSAGE
-from src.domain.enums import Cause, Verdict
-from src.models.institution import WGS84_SRID
+from src.domain.enums import Cause, NeedStatus, Verdict
+from src.models.institution import WGS84_SRID, Institution
+from src.models.need import Need
 from src.models.user import Donor, Manager
 from tests.api.helpers import GOOGLE_CALLBACK, INSTITUTIONS
 from tests.fakes import USER_EMAIL
@@ -95,6 +97,7 @@ def test_nearest_is_the_default_and_lists_the_closest_visible_institutions_first
         "verdict": "nonprofit",
         "score": None,
         "match_reasons": [],
+        "open_needs_count": 0,
     }
 
 
@@ -212,6 +215,22 @@ def test_only_cause_text_uses_causes_and_q(
     )
 
     assert names(response) == expected
+
+
+@pytest.mark.parametrize("strategy", ["nearest", "best_match", "cause_text"])
+def test_each_result_counts_its_open_needs(
+    donor_client: TestClient, db_session: Session, strategy: str
+) -> None:
+    save_institutions(db_session, INSTITUTIONS_AROUND)
+    saude = db_session.scalars(select(Institution).where(Institution.legal_name == SAUDE)).one()
+    for status in (NeedStatus.OPEN, NeedStatus.OPEN, NeedStatus.FULFILLED, NeedStatus.CLOSED):
+        db_session.add(Need(institution=saude, title="Luvas", description="Doação", status=status))
+    db_session.commit()
+
+    response = donor_client.get(SEARCH, params={"strategy": strategy})
+
+    counts = {found["legal_name"]: found["open_needs_count"] for found in response.json()}
+    assert counts == {SAUDE: 2, ABRIGO: 0, LAR: 0}
 
 
 @pytest.mark.parametrize("strategy", ["nearest", "best_match", "cause_text"])

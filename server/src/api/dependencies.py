@@ -121,19 +121,20 @@ def get_institution_service(
 InstitutionServiceDep = Annotated[InstitutionService, Depends(get_institution_service)]
 
 
+def get_need_repository(session: Annotated[Session, Depends(get_db_session)]) -> NeedRepository:
+    return SqlAlchemyNeedRepository(session)
+
+
 def get_institution_search_service(
     repository: Annotated[InstitutionRepository, Depends(get_institution_repository)],
+    needs: Annotated[NeedRepository, Depends(get_need_repository)],
 ) -> InstitutionSearchService:
-    return InstitutionSearchService(repository)
+    return InstitutionSearchService(repository, needs)
 
 
 InstitutionSearchServiceDep = Annotated[
     InstitutionSearchService, Depends(get_institution_search_service)
 ]
-
-
-def get_need_repository(session: Annotated[Session, Depends(get_db_session)]) -> NeedRepository:
-    return SqlAlchemyNeedRepository(session)
 
 
 def get_need_service(

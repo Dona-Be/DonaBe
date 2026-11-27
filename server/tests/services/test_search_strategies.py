@@ -44,6 +44,16 @@ class FakeInstitutionRepository:
         return self.rows[page.offset : page.offset + page.size]
 
 
+class FakeNeedRepository:
+    def __init__(self, open_needs: dict[int, int] | None = None) -> None:
+        self.open_needs = open_needs or {}
+        self.calls: list[list[int]] = []
+
+    def count_open_by_institution(self, institution_ids: list[int]) -> dict[int, int]:
+        self.calls.append(list(institution_ids))
+        return {key: value for key, value in self.open_needs.items() if key in institution_ids}
+
+
 def make_donor(*causes: Cause) -> Donor:
     return Donor(
         id=DONOR_ID,
@@ -127,7 +137,9 @@ def test_registry_selects_each_strategy_by_registered_name(
 ) -> None:
     repository = FakeInstitutionRepository()
 
-    InstitutionSearchService(repository).search(make_donor(), name, FILTERS, FIRST_PAGE)
+    InstitutionSearchService(repository, FakeNeedRepository()).search(
+        make_donor(), name, FILTERS, FIRST_PAGE
+    )
 
     assert repository.calls == [call]
 
@@ -136,13 +148,15 @@ def test_registry_selects_each_strategy_by_registered_name(
 def test_registry_has_a_strategy_for_every_name_of_the_enum(name: SearchStrategyName) -> None:
     repository = FakeInstitutionRepository()
 
-    InstitutionSearchService(repository).search(make_donor(), name, FILTERS, FIRST_PAGE)
+    InstitutionSearchService(repository, FakeNeedRepository()).search(
+        make_donor(), name, FILTERS, FIRST_PAGE
+    )
 
     assert len(repository.calls) == 1
 
 
 def test_registry_rejects_unknown_name_with_an_error_mapped_to_422() -> None:
-    service = InstitutionSearchService(FakeInstitutionRepository())
+    service = InstitutionSearchService(FakeInstitutionRepository(), FakeNeedRepository())
 
     with pytest.raises(InvalidSearchStrategyError, match="não é válida") as error:
         service.search(make_donor(), "unknown", SearchFilters(), SearchPage())
@@ -157,7 +171,22 @@ def test_refuses_a_donor_without_location_before_searching(name: SearchStrategyN
     donor.location = None
 
     with pytest.raises(DonorWithoutLocationError, match="Informe seu CEP") as error:
-        InstitutionSearchService(repository).search(donor, name, FILTERS, FIRST_PAGE)
+        InstitutionSearchService(repository, FakeNeedRepository()).search(
+            donor, name, FILTERS, FIRST_PAGE
+        )
 
     assert status_for(error.value) == 422
     assert repository.calls == []
+
+
+def test_counts_the_open_needs_of_the_page_only_in_one_call() -> None:
+    institutions = [make_institution(institution_id) for institution_id in (1, 2, 3)]
+    repository = FakeInstitutionRepository([(institution, 1) for institution in institutions])
+    needs = FakeNeedRepository({1: 4, 3: 2})
+    service = InstitutionSearchService(repository, needs)
+
+    results = service.search(make_donor(), "best_match", FILTERS, SearchPage(number=1, size=2))
+
+    # best_match scores all three candidates, but only the page is counted.
+    assert needs.calls == [[1, 2]]
+    assert [result.open_needs_count for result in results] == [4, 0]

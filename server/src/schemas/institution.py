@@ -115,6 +115,7 @@ class InstitutionSearchResult(BaseModel):
     score: int | None
     # Not "reasons": an institution already has reasons, the ones behind its CNPJ verdict.
     match_reasons: list[str]
+    open_needs_count: int
 
     @classmethod
     def from_result(cls, result: SearchResult) -> Self:
@@ -129,4 +130,5 @@ class InstitutionSearchResult(BaseModel):
             distance_km=result.distance_km,
             score=result.score,
             match_reasons=list(result.reasons),
+            open_needs_count=result.open_needs_count,
         )

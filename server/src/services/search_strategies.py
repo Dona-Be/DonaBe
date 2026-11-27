@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from src.domain.enums import SearchStrategyName
 from src.domain.exceptions import DonorWithoutLocationError, InvalidSearchStrategyError
@@ -8,6 +8,7 @@ from src.domain.search import SearchFilters, SearchPage
 from src.models.institution import Institution
 from src.models.user import Donor
 from src.repositories.institutions import InstitutionRepository
+from src.repositories.needs import NeedRepository
 from src.services.match_score import (
     BaseMatchScore,
     PreferredCauseDecorator,
@@ -22,6 +23,7 @@ class SearchResult:
     distance_km: float
     score: int | None = None
     reasons: tuple[str, ...] = ()
+    open_needs_count: int = 0
 
 
 class SearchStrategy(ABC):
@@ -69,7 +71,8 @@ class CauseTextStrategy(SearchStrategy):
 
 
 class InstitutionSearchService:
-    def __init__(self, repository: InstitutionRepository) -> None:
+    def __init__(self, repository: InstitutionRepository, needs: NeedRepository) -> None:
+        self._needs = needs
         self._strategies: Mapping[str, SearchStrategy] = {
             SearchStrategyName.NEAREST: NearestStrategy(repository),
             SearchStrategyName.BEST_MATCH: BestMatchStrategy(repository),
@@ -90,4 +93,12 @@ class InstitutionSearchService:
         # Without a location the radius has no center, and the search would come back empty.
         if donor.location is None:
             raise DonorWithoutLocationError
-        return strategy.search(donor, filters, page)
+        results = strategy.search(donor, filters, page)
+        # Counted after the strategy, so best_match counts only its page and not every candidate.
+        open_needs = self._needs.count_open_by_institution(
+            [result.institution.id for result in results]
+        )
+        return [
+            replace(result, open_needs_count=open_needs.get(result.institution.id, 0))
+            for result in results
+        ]
