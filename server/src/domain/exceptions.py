@@ -107,3 +107,23 @@ class NeedNotOpenError(DomainError):
 class InvalidSearchStrategyError(DomainError):
     def __init__(self, strategy: str) -> None:
         super().__init__(f"A estratégia de busca {strategy} não é válida.")
+
+
+class IntentNotFoundError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Intenção de doação não encontrada.")
+
+
+class NeedNotOpenForIntentError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("A necessidade não está aberta para receber intenções de doação.")
+
+
+class ActiveIntentAlreadyExistsError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Já existe uma intenção ativa para esta necessidade.")
+
+
+class NotIntentDonorError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Apenas o doador desta intenção pode alterá-la.")
