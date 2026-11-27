@@ -2,7 +2,9 @@ from typing import Annotated, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from src.domain.enums import Cause, InstitutionType, Verdict
+from src.api.parameters import MAX_INTEGER
+from src.domain.enums import Cause, InstitutionType, SearchStrategyName, Verdict
+from src.domain.search import DEFAULT_SEARCH_RADIUS_KM, MAX_SEARCH_RADIUS_KM, SearchFilters
 from src.schemas.text import StrictText
 from src.services.search_strategies import SearchResult
 
@@ -87,6 +89,19 @@ class OpenNeed(BaseModel):
 
 class InstitutionPage(PublicInstitution):
     open_needs: list[OpenNeed]
+
+
+class InstitutionSearch(BaseModel):
+    """Query parameters of the search. Only cause_text uses causes and q."""
+
+    strategy: SearchStrategyName = SearchStrategyName.NEAREST
+    max_distance_km: float = Field(default=DEFAULT_SEARCH_RADIUS_KM, gt=0, le=MAX_SEARCH_RADIUS_KM)
+    causes: list[Cause] = Field(default_factory=list)
+    q: str | None = Field(default=None, max_length=MAX_TEXT_LENGTH)
+    page: int = Field(default=1, ge=1, le=MAX_INTEGER)
+
+    def filters(self) -> SearchFilters:
+        return SearchFilters(radius_km=self.max_distance_km, causes=tuple(self.causes), name=self.q)
 
 
 class InstitutionSearchResult(BaseModel):

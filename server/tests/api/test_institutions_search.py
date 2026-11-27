@@ -21,15 +21,16 @@ SAUDE = "Instituto Saúde Já"
 ABRIGO = "Abrigo Amigo"
 LAR = "Lar dos Idosos"
 DISTANTE = "Saúde Distante"
-# (legal name, km north of the donor or None without location, verdict)
+NONPROFIT_REASON = "CNPJ verificado: entidade sem fins lucrativos"
+# (legal name, km north of the donor or None without location, verdict, cause)
 INSTITUTIONS_AROUND = (
-    (LAR, 7, Verdict.LIKELY_CHARITY),
-    (ABRIGO, 3, Verdict.NONPROFIT),
-    (SAUDE, 0.5, Verdict.NONPROFIT),
-    ("Saúde Inativa", 1, Verdict.INACTIVE),
-    ("Saúde Improvável", 2, Verdict.UNLIKELY),
-    ("Sem Localização", None, Verdict.LIKELY_CHARITY),
-    (DISTANTE, 15, Verdict.LIKELY_CHARITY),
+    (LAR, 7, Verdict.LIKELY_CHARITY, Cause.ELDERLY),
+    (ABRIGO, 3, Verdict.NONPROFIT, Cause.ANIMALS),
+    (SAUDE, 0.5, Verdict.NONPROFIT, Cause.HEALTH),
+    ("Saúde Inativa", 1, Verdict.INACTIVE, Cause.HEALTH),
+    ("Saúde Improvável", 2, Verdict.UNLIKELY, Cause.HEALTH),
+    ("Sem Localização", None, Verdict.LIKELY_CHARITY, Cause.HEALTH),
+    (DISTANTE, 15, Verdict.LIKELY_CHARITY, Cause.HEALTH),
 )
 
 
@@ -40,13 +41,13 @@ def point_at(km_north: float) -> WKTElement:
 
 def save_institutions(db_session: Session, around: tuple[tuple[Any, ...], ...]) -> None:
     manager = Manager.from_profile(profile(MANAGER_EMAIL))
-    for index, (legal_name, km, verdict) in enumerate(around):
+    for index, (legal_name, km, verdict, cause) in enumerate(around):
         institution = new_institution(manager)
         institution.cnpj = f"{index:014d}"
         institution.legal_name = legal_name
         institution.location = None if km is None else point_at(km)
         institution.verdict = verdict
-        institution.causes = [Cause.HEALTH]
+        institution.causes = [cause]
         db_session.add(institution)
     db_session.commit()
 
@@ -59,7 +60,13 @@ def log_in(client: TestClient) -> TestClient:
 
 @pytest.fixture
 def donor_client(client: TestClient, db_session: Session) -> TestClient:
-    db_session.add(Donor.from_profile(profile(USER_EMAIL), location=point_at(0)))
+    donor = Donor.from_profile(
+        profile(USER_EMAIL),
+        postal_code="01310200",
+        location=point_at(0),
+        preferred_causes=[Cause.ANIMALS],
+    )
+    db_session.add(donor)
     db_session.commit()
     return log_in(client)
 
@@ -113,14 +120,19 @@ def test_lists_only_the_institutions_within_max_distance_km(
     assert names(response) == expected
 
 
-def test_each_page_has_20_institutions(donor_client: TestClient, db_session: Session) -> None:
-    nearest_first = tuple((f"Instituição {km}", km / 10, Verdict.NONPROFIT) for km in range(21))
+@pytest.mark.parametrize("strategy", ["nearest", "best_match", "cause_text"])
+def test_each_page_has_20_institutions(
+    donor_client: TestClient, db_session: Session, strategy: str
+) -> None:
+    nearest_first = tuple(
+        (f"Instituição {km}", km / 10, Verdict.NONPROFIT, Cause.HEALTH) for km in range(21)
+    )
     save_institutions(db_session, nearest_first)
 
-    first_page = donor_client.get(SEARCH)
-    second_page = donor_client.get(SEARCH, params={"page": 2})
+    first_page = donor_client.get(SEARCH, params={"strategy": strategy})
+    second_page = donor_client.get(SEARCH, params={"strategy": strategy, "page": 2})
 
-    assert names(first_page) == [name for name, _, _ in nearest_first[:20]]
+    assert names(first_page) == [name for name, *_ in nearest_first[:20]]
     assert names(second_page) == ["Instituição 20"]
 
 
@@ -134,6 +146,8 @@ def test_each_page_has_20_institutions(donor_client: TestClient, db_session: Ses
         {"max_distance_km": "nan"},
         {"page": 0},
         {"page": 2**31},
+        {"causes": "unknown"},
+        {"q": "a" * 201},
     ],
 )
 def test_rejects_invalid_parameters(donor_client: TestClient, params: dict[str, Any]) -> None:
@@ -142,6 +156,62 @@ def test_rejects_invalid_parameters(donor_client: TestClient, params: dict[str, 
     assert response.status_code == 422
     # The error is about the query, so "search" was not read as an institution id.
     assert [error["loc"][0] for error in response.json()["detail"]] == ["query"]
+
+
+def test_best_match_orders_by_score_and_explains_it(
+    donor_client: TestClient, db_session: Session
+) -> None:
+    save_institutions(db_session, INSTITUTIONS_AROUND)
+
+    response = donor_client.get(SEARCH, params={"strategy": "best_match"})
+
+    assert names(response) == [ABRIGO, SAUDE, LAR]
+    abrigo, saude, _ = response.json()
+    assert (abrigo["score"], abrigo["match_reasons"]) == (
+        45,
+        ["Fica a até 5 km de você", "Atende sua causa: Animais", NONPROFIT_REASON],
+    )
+    assert (saude["score"], saude["match_reasons"]) == (
+        40,
+        ["Fica a até 2 km de você", NONPROFIT_REASON],
+    )
+
+
+@pytest.mark.parametrize(
+    ("params", "expected"),
+    [
+        ({"causes": "animals"}, [ABRIGO]),
+        ({"causes": ["animals", "elderly"]}, [ABRIGO, LAR]),
+        ({"q": "lar"}, [LAR]),
+        ({"q": "SAUDE"}, [SAUDE]),
+        ({"causes": "animals", "q": "saude"}, []),
+        ({}, [SAUDE, ABRIGO, LAR]),
+    ],
+)
+def test_cause_text_keeps_the_institutions_with_the_causes_and_the_name(
+    donor_client: TestClient, db_session: Session, params: dict[str, Any], expected: list[str]
+) -> None:
+    save_institutions(db_session, INSTITUTIONS_AROUND)
+
+    response = donor_client.get(SEARCH, params={"strategy": "cause_text", **params})
+
+    assert names(response) == expected
+
+
+@pytest.mark.parametrize(
+    ("strategy", "expected"),
+    [("nearest", [SAUDE, ABRIGO, LAR]), ("best_match", [ABRIGO, SAUDE, LAR])],
+)
+def test_only_cause_text_uses_causes_and_q(
+    donor_client: TestClient, db_session: Session, strategy: str, expected: list[str]
+) -> None:
+    save_institutions(db_session, INSTITUTIONS_AROUND)
+
+    response = donor_client.get(
+        SEARCH, params={"strategy": strategy, "causes": "health", "q": "saude"}
+    )
+
+    assert names(response) == expected
 
 
 def test_requires_a_logged_in_user(client: TestClient) -> None:

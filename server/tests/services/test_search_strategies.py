@@ -4,7 +4,7 @@ from typing import Any
 import pytest
 
 from src.api.error_handlers import status_for
-from src.domain.enums import Cause, Verdict
+from src.domain.enums import Cause, SearchStrategyName, Verdict
 from src.domain.exceptions import InvalidSearchStrategyError
 from src.domain.search import SearchFilters, SearchPage
 from src.models.user import Donor
@@ -123,6 +123,15 @@ def test_registry_selects_each_strategy_by_registered_name(
     InstitutionSearchService(repository).search(make_donor(), name, FILTERS, FIRST_PAGE)
 
     assert repository.calls == [call]
+
+
+@pytest.mark.parametrize("name", list(SearchStrategyName))
+def test_registry_has_a_strategy_for_every_name_of_the_enum(name: SearchStrategyName) -> None:
+    repository = FakeInstitutionRepository()
+
+    InstitutionSearchService(repository).search(make_donor(), name, FILTERS, FIRST_PAGE)
+
+    assert len(repository.calls) == 1
 
 
 def test_registry_rejects_unknown_name_with_an_error_mapped_to_422() -> None:
