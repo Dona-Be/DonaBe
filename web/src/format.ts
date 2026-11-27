@@ -53,3 +53,9 @@ export function joinPhone(phone: Phone): string | null {
   const { areaCode, number } = tidyPhone(phone);
   return onlyDigits(areaCode + number) || null;
 }
+
+const DATE_FORMAT = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" });
+
+export function formatDate(isoDate: string): string {
+  return DATE_FORMAT.format(new Date(isoDate));
+}
