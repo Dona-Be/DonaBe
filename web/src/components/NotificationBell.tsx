@@ -15,6 +15,7 @@ import { useUnreadCount } from "../hooks/useUnreadCount";
 import { routes } from "../routes";
 import type { Role } from "../types/user";
 import { ErrorMessage } from "./ErrorMessage";
+import { Loading } from "./Loading";
 
 const PANEL_ID = "notification-panel";
 const MAX_BADGE_COUNT = 9;
@@ -177,8 +178,7 @@ function NotificationList({
       </div>
     );
   }
-  if (notifications === null)
-    return <p className="p-6 text-center text-slate-500">Carregando...</p>;
+  if (notifications === null) return <Loading />;
   if (notifications.length === 0) {
     return <p className="p-6 text-center text-slate-600">Você não tem notificações.</p>;
   }

@@ -1,10 +1,9 @@
 import { act, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { Notification } from "../src/api/notifications";
-import { MANAGER, mockFetch, renderApp, requestsMade, USER } from "./helpers";
+import { MANAGER_SESSION, mockFetch, renderApp, requestsMade, USER } from "./helpers";
 
 const DONOR_SESSION = { "GET /api/profiles/me": { body: USER } };
-const MANAGER_SESSION = { "GET /api/profiles/me": { body: MANAGER } };
 const UNREAD_COUNT = "GET /api/notifications/unread-count";
 const FIRST_PAGE = "GET /api/notifications?page=1";
 const SECOND_PAGE = "GET /api/notifications?page=2";
