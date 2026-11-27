@@ -38,8 +38,8 @@ export function ConfirmDialog({
 
   return (
     <div
-      onClick={() => {
-        if (!pending) onCancel();
+      onClick={(event) => {
+        if (event.target === event.currentTarget && !pending) onCancel();
       }}
       className="fixed inset-0 z-10 flex items-end justify-center bg-slate-900/40 p-4 sm:items-center"
     >
