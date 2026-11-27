@@ -1,12 +1,11 @@
-from typing import Annotated, Self
+from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from src.api.parameters import MAX_INTEGER
 from src.domain.enums import Cause, InstitutionType, SearchStrategyName, Verdict
+from src.domain.limits import MAX_INTEGER
 from src.domain.search import DEFAULT_SEARCH_RADIUS_KM, MAX_SEARCH_RADIUS_KM, SearchFilters
 from src.schemas.text import StrictText
-from src.services.search_strategies import SearchResult
 
 MAX_TEXT_LENGTH = 200
 MAX_DESCRIPTION_LENGTH = 2000
@@ -91,7 +90,7 @@ class InstitutionPage(PublicInstitution):
     open_needs: list[OpenNeed]
 
 
-class InstitutionSearch(BaseModel):
+class InstitutionSearch(StrictText):
     """Query parameters of the search. Only cause_text uses causes and q."""
 
     strategy: SearchStrategyName = SearchStrategyName.NEAREST
@@ -116,19 +115,3 @@ class InstitutionSearchResult(BaseModel):
     # Not "reasons": an institution already has reasons, the ones behind its CNPJ verdict.
     match_reasons: list[str]
     open_needs_count: int
-
-    @classmethod
-    def from_result(cls, result: SearchResult) -> Self:
-        institution = result.institution
-        return cls(
-            id=institution.id,
-            type=institution.type,
-            legal_name=institution.legal_name,
-            trade_name=institution.trade_name,
-            causes=institution.causes,
-            verdict=institution.verdict,
-            distance_km=result.distance_km,
-            score=result.score,
-            match_reasons=list(result.reasons),
-            open_needs_count=result.open_needs_count,
-        )

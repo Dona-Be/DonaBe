@@ -17,6 +17,7 @@ from src.schemas.institution import (
     NewInstitution,
     PublicInstitution,
 )
+from src.services.search_strategies import SearchResult
 
 router = APIRouter(prefix="/institutions", tags=["institutions"])
 
@@ -56,6 +57,22 @@ def list_my_institutions(
     return service.list_of(manager)
 
 
+def search_response(result: SearchResult) -> InstitutionSearchResult:
+    institution = result.institution
+    return InstitutionSearchResult(
+        id=institution.id,
+        type=institution.type,
+        legal_name=institution.legal_name,
+        trade_name=institution.trade_name,
+        causes=institution.causes,
+        verdict=institution.verdict,
+        distance_km=result.distance_km,
+        score=result.score,
+        match_reasons=list(result.reasons),
+        open_needs_count=result.open_needs_count,
+    )
+
+
 # Declared before /{institution_id}, or "search" would be read as an id.
 @router.get(
     "/search",
@@ -74,7 +91,7 @@ def search_institutions(
     search: Annotated[InstitutionSearch, Query()],
 ) -> list[InstitutionSearchResult]:
     results = service.search(donor, search.strategy, search.filters(), SearchPage(search.page))
-    return [InstitutionSearchResult.from_result(result) for result in results]
+    return [search_response(result) for result in results]
 
 
 @router.get(

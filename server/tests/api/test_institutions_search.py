@@ -151,6 +151,7 @@ def test_each_page_has_20_institutions(
         {"page": 2**31},
         {"causes": "unknown"},
         {"q": "a" * 201},
+        {"q": "a\0b"},
     ],
 )
 def test_rejects_invalid_parameters(donor_client: TestClient, params: dict[str, Any]) -> None:
