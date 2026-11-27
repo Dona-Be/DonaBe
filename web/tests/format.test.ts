@@ -3,6 +3,7 @@ import {
   formatAddress,
   formatPhone,
   formatPostalCode,
+  formatRelativeTime,
   joinPhone,
   splitPhone,
   tidyPhone,
@@ -90,5 +91,38 @@ describe("joinPhone", () => {
     [{ areaCode: "", number: "" }, null],
   ])("sends %o as %s", (phone, sent) => {
     expect(joinPhone(phone)).toBe(sent);
+  });
+});
+
+describe("formatRelativeTime", () => {
+  const now = new Date("2026-11-25T12:00:00Z");
+  const before = (milliseconds: number) => new Date(now.getTime() - milliseconds).toISOString();
+  const MINUTE = 60_000;
+  const HOUR = 60 * MINUTE;
+  const DAY = 24 * HOUR;
+
+  it.each([
+    [30_000, "agora"],
+    [5 * MINUTE, "há 5 minutos"],
+    [HOUR, "há 1 hora"],
+    [DAY, "ontem"],
+    [3 * DAY, "há 3 dias"],
+  ])("says %i ms ago as %s", (elapsed, text) => {
+    expect(formatRelativeTime(before(elapsed), now)).toBe(text);
+  });
+
+  it("shows the date after a week", () => {
+    const weekAgo = new Date(2026, 10, 18, 12).toISOString();
+    expect(formatRelativeTime(weekAgo, new Date(2026, 10, 25, 12))).toBe("18/11/2026");
+    expect(formatRelativeTime(weekAgo, new Date(2026, 10, 24, 12))).toBe("há 6 dias");
+  });
+
+  it("counts the days by the calendar", () => {
+    const tuesdayNight = new Date(2026, 10, 24, 23).toISOString();
+    expect(formatRelativeTime(tuesdayNight, new Date(2026, 10, 26, 5))).toBe("anteontem");
+  });
+
+  it("treats a date slightly in the future as now", () => {
+    expect(formatRelativeTime(before(-5_000), now)).toBe("agora");
   });
 });

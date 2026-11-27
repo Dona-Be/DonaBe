@@ -5,6 +5,7 @@ import { useAction } from "../hooks/useAction";
 import { routes } from "../routes";
 import { ErrorMessage } from "./ErrorMessage";
 import { Logo } from "./Logo";
+import { NotificationBell } from "./NotificationBell";
 
 export function Layout() {
   const { role, setUser } = useAuth();
@@ -17,32 +18,35 @@ export function Layout() {
           <Link to={routes.dashboard} className="text-xl">
             <Logo />
           </Link>
-          <nav className="flex gap-3">
-            <Link to={routes.dashboard} className="hover:underline">
-              Início
-            </Link>
-            <span aria-hidden="true">|</span>
-            <Link to={routes.profile} className="hover:underline">
-              Meu perfil
-            </Link>
-            {role === "manager" && (
-              <>
-                <span aria-hidden="true">|</span>
-                <Link to={routes.institutions} className="hover:underline">
-                  Minhas instituições
-                </Link>
-              </>
-            )}
-            <span aria-hidden="true">|</span>
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => run(() => logout().then(() => setUser(null)))}
-              className="cursor-pointer hover:underline"
-            >
-              Sair
-            </button>
-          </nav>
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+            <nav className="flex gap-3">
+              <Link to={routes.dashboard} className="hover:underline">
+                Início
+              </Link>
+              <span aria-hidden="true">|</span>
+              <Link to={routes.profile} className="hover:underline">
+                Meu perfil
+              </Link>
+              {role === "manager" && (
+                <>
+                  <span aria-hidden="true">|</span>
+                  <Link to={routes.institutions} className="hover:underline">
+                    Minhas instituições
+                  </Link>
+                </>
+              )}
+              <span aria-hidden="true">|</span>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => run(() => logout().then(() => setUser(null)))}
+                className="cursor-pointer hover:underline"
+              >
+                Sair
+              </button>
+            </nav>
+            <NotificationBell />
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-3xl space-y-4 p-4">
