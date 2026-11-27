@@ -3,6 +3,7 @@ import {
   formatAddress,
   formatPhone,
   formatPostalCode,
+  formatRelativeTime,
   joinPhone,
   splitPhone,
   tidyPhone,
@@ -90,5 +91,31 @@ describe("joinPhone", () => {
     [{ areaCode: "", number: "" }, null],
   ])("sends %o as %s", (phone, sent) => {
     expect(joinPhone(phone)).toBe(sent);
+  });
+});
+
+describe("formatRelativeTime", () => {
+  const now = new Date("2026-11-25T12:00:00Z");
+  const before = (milliseconds: number) => new Date(now.getTime() - milliseconds).toISOString();
+  const MINUTE = 60_000;
+  const HOUR = 60 * MINUTE;
+  const DAY = 24 * HOUR;
+
+  it.each([
+    [30_000, "agora"],
+    [5 * MINUTE, "há 5 minutos"],
+    [HOUR, "há 1 hora"],
+    [DAY, "ontem"],
+    [3 * DAY, "há 3 dias"],
+  ])("says %i ms ago as %s", (elapsed, text) => {
+    expect(formatRelativeTime(before(elapsed), now)).toBe(text);
+  });
+
+  it("shows the date after a week", () => {
+    expect(formatRelativeTime("2026-11-10T12:00:00Z", now)).toBe("10/11/2026");
+  });
+
+  it("treats a date slightly in the future as now", () => {
+    expect(formatRelativeTime(before(-5_000), now)).toBe("agora");
   });
 });

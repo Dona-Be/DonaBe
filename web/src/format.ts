@@ -53,3 +53,20 @@ export function joinPhone(phone: Phone): string | null {
   const { areaCode, number } = tidyPhone(phone);
   return onlyDigits(areaCode + number) || null;
 }
+
+const RELATIVE_TIME = new Intl.RelativeTimeFormat("pt-BR", { numeric: "auto" });
+const DATE = new Intl.DateTimeFormat("pt-BR");
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
+const WEEK = 7 * DAY;
+
+export function formatRelativeTime(isoDate: string, now: Date = new Date()): string {
+  const date = new Date(isoDate);
+  const elapsed = Math.max(0, now.getTime() - date.getTime());
+  if (elapsed < MINUTE) return "agora";
+  if (elapsed < HOUR) return RELATIVE_TIME.format(-Math.floor(elapsed / MINUTE), "minute");
+  if (elapsed < DAY) return RELATIVE_TIME.format(-Math.floor(elapsed / HOUR), "hour");
+  if (elapsed < WEEK) return RELATIVE_TIME.format(-Math.floor(elapsed / DAY), "day");
+  return DATE.format(date);
+}

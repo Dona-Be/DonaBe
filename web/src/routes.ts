@@ -4,4 +4,6 @@ export const routes = {
   profile: "/perfil",
   institutions: "/instituicoes",
   newInstitution: "/instituicoes/nova",
+  myDonations: "/minhas-doacoes",
+  receivedIntents: "/interesses-recebidos",
 } as const;
