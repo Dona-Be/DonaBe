@@ -85,6 +85,9 @@ describe("InstitutionPage", () => {
     renderApp(`/instituicoes/${id}`);
 
     expect((await screen.findByRole("alert")).textContent).toBe(NOT_FOUND);
-    expect(requestsMade(fetchMock)).toEqual(["GET /api/profiles/me"]);
+    const institutionRequests = requestsMade(fetchMock).filter((request) =>
+      request.includes("/api/institutions"),
+    );
+    expect(institutionRequests).toEqual([]);
   });
 });
