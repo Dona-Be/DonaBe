@@ -65,6 +65,23 @@ describe("ConfirmDialog", () => {
     expect(card("Cobertores").getByText("Encerrada em 20/11/2026")).toBeTruthy();
   });
 
+  it.each(["Marcar como atendida", "Encerrar"])(
+    "locks the dialog while %s runs",
+    async (action) => {
+      const { fetchMock, user } = openNeeds([NEED]);
+      await user.click((await loadedCard("Cobertores")).getByRole("button", { name: action }));
+      fetchMock.mockReturnValue(new Promise<Response>(() => undefined));
+      const confirm = dialog().getByRole("button", { name: action });
+
+      await user.click(confirm);
+      await user.keyboard("{Escape}");
+
+      expect(confirm.hasAttribute("disabled")).toBe(true);
+      expect(dialog().getByRole("button", { name: "Voltar" }).hasAttribute("disabled")).toBe(true);
+      expect(screen.getByRole("alertdialog")).toBeTruthy();
+    },
+  );
+
   it("shows why a status change failed and closes on Escape", async () => {
     const notOpen = {
       status: 409,
