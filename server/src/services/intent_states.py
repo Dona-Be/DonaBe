@@ -58,6 +58,8 @@ class InContact(CancellableState):
 
     def schedule_delivery(self, actor: Role, date: datetime) -> None:
         require_role(actor, Role.MANAGER)
+        if date.tzinfo is None:
+            date = date.replace(tzinfo=UTC)
         if date <= datetime.now(UTC):
             raise InvalidTransitionError()
         self._move_to(DeliveryScheduled)

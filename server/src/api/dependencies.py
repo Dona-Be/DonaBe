@@ -12,6 +12,7 @@ from src.connectors.json_api import http_client
 from src.connectors.routing import OsrmRoutePlanner, RoutePlanner
 from src.core.database import engine
 from src.repositories.institutions import InstitutionRepository, SqlAlchemyInstitutionRepository
+from src.repositories.intents import IntentRepository, SqlAlchemyIntentRepository
 from src.repositories.needs import NeedRepository, SqlAlchemyNeedRepository
 from src.repositories.notifications import NotificationRepository, SqlAlchemyNotificationRepository
 from src.repositories.users import SqlAlchemyUserRepository, UserRepository
@@ -22,6 +23,7 @@ from src.services.intent_events import (
     IntentEventPublisher,
     ManagerNotificationObserver,
 )
+from src.services.intents import IntentService
 from src.services.locations import LocationService
 from src.services.needs import NeedService
 from src.services.notifications import NotificationService
@@ -169,3 +171,19 @@ def get_intent_event_publisher(
     publisher.attach(ManagerNotificationObserver(notifications))
     publisher.attach(DonorNotificationObserver(notifications))
     return publisher
+
+
+def get_intent_repository(session: Annotated[Session, Depends(get_db_session)]) -> IntentRepository:
+    return SqlAlchemyIntentRepository(session)
+
+
+def get_intent_service(
+    repository: Annotated[IntentRepository, Depends(get_intent_repository)],
+    needs: Annotated[NeedRepository, Depends(get_need_repository)],
+    institutions: Annotated[InstitutionRepository, Depends(get_institution_repository)],
+    publisher: Annotated[IntentEventPublisher, Depends(get_intent_event_publisher)],
+) -> IntentService:
+    return IntentService(repository, needs, institutions, publisher)
+
+
+IntentServiceDep = Annotated[IntentService, Depends(get_intent_service)]

@@ -10,6 +10,7 @@ from src.auth.google import GoogleLoginError
 from src.connectors.exceptions import ExternalServiceError
 from src.core.config import settings
 from src.domain.exceptions import (
+    ActiveIntentAlreadyExistsError,
     CepNotFoundError,
     CepWithoutCoordinatesError,
     CnpjNotFoundError,
@@ -20,6 +21,7 @@ from src.domain.exceptions import (
     IncompleteAddressError,
     InstitutionAlreadyExistsError,
     InstitutionNotFoundError,
+    IntentNotFoundError,
     InvalidCepError,
     InvalidCnpjError,
     InvalidPhoneError,
@@ -27,8 +29,10 @@ from src.domain.exceptions import (
     InvalidTransitionError,
     NeedNotFoundError,
     NeedNotOpenError,
+    NeedNotOpenForIntentError,
     NotificationNotFoundError,
     NotInstitutionManagerError,
+    NotIntentDonorError,
     NotNeedManagerError,
     RouteNotFoundError,
     UnsupportedLegalNatureError,
@@ -43,11 +47,13 @@ INVALID_VALUES_MESSAGE = "Os dados enviados contêm valores inválidos."
 
 HTTP_STATUS_BY_ERROR: dict[type[Exception], int] = {
     DomainError: status.HTTP_400_BAD_REQUEST,
+    NotIntentDonorError: status.HTTP_403_FORBIDDEN,
     NotInstitutionManagerError: status.HTTP_403_FORBIDDEN,
     NotNeedManagerError: status.HTTP_403_FORBIDDEN,
     UserAlreadyExistsError: status.HTTP_409_CONFLICT,
     InvalidTransitionError: status.HTTP_409_CONFLICT,
     NeedNotOpenError: status.HTTP_409_CONFLICT,
+    ActiveIntentAlreadyExistsError: status.HTTP_409_CONFLICT,
     InstitutionAlreadyExistsError: status.HTTP_409_CONFLICT,
     InvalidCnpjError: status.HTTP_422_UNPROCESSABLE_CONTENT,
     UnsupportedLegalNatureError: status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -65,6 +71,8 @@ HTTP_STATUS_BY_ERROR: dict[type[Exception], int] = {
     NotificationNotFoundError: status.HTTP_404_NOT_FOUND,
     InstitutionNotFoundError: status.HTTP_404_NOT_FOUND,
     NeedNotFoundError: status.HTTP_404_NOT_FOUND,
+    IntentNotFoundError: status.HTTP_404_NOT_FOUND,
+    NeedNotOpenForIntentError: status.HTTP_422_UNPROCESSABLE_CONTENT,
     ExternalServiceError: status.HTTP_503_SERVICE_UNAVAILABLE,
 }
 
