@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { Link, useParams } from "react-router";
 import { listMyInstitutions, type Institution } from "../api/institutions";
 import {
@@ -11,6 +11,7 @@ import {
   type NeedChanges,
   type NeedStatus,
 } from "../api/needs";
+import { PRIMARY_CLASS } from "../components/Button";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { ErrorMessage } from "../components/ErrorMessage";
 import { FriendlyError, friendlyMessage } from "../errors";
@@ -55,7 +56,7 @@ const badgeClasses: Record<NeedStatus, string> = {
 const NOT_MINE = "Instituição não encontrada entre as suas instituições.";
 const UNAVAILABLE_TO_DONORS = "deixa de aparecer para os doadores e não recebe novos interesses.";
 
-const changes: Record<
+const changeTexts: Record<
   StatusChange,
   { title: string; confirm: string; message: (title: string) => string; done: string }
 > = {
@@ -82,10 +83,6 @@ const FULFILL_CLASS =
   "rounded-full border border-emerald-700 px-5 py-3 font-bold text-emerald-900 " +
   "hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-offset-2 " +
   "focus-visible:outline-sky-700";
-const MAIN_ACTION_CLASS =
-  "inline-flex h-14 items-center justify-center rounded-full bg-sky-300 px-6 font-bold " +
-  "text-sky-950 hover:bg-sky-400 focus-visible:outline-2 focus-visible:outline-offset-2 " +
-  "focus-visible:outline-sky-700 sm:px-8";
 const FILTER_CLASS =
   "cursor-pointer rounded-full border border-slate-500 px-4 py-2 aria-pressed:border-sky-700 " +
   "aria-pressed:bg-sky-100 aria-pressed:ring-1 aria-pressed:ring-sky-700 " +
@@ -128,7 +125,7 @@ function StatusFilter({
   onChange,
 }: Readonly<{ needs: Need[]; value: NeedStatus; onChange: (status: NeedStatus) => void }>) {
   return (
-    <div role="group" aria-label="Filtrar por status" className="flex flex-wrap gap-2">
+    <fieldset aria-label="Filtrar por status" className="flex flex-wrap gap-2">
       {STATUSES.map((status) => (
         <button
           key={status}
@@ -141,7 +138,7 @@ function StatusFilter({
           <span className="font-bold">{needs.filter((need) => need.status === status).length}</span>
         </button>
       ))}
-    </div>
+    </fieldset>
   );
 }
 
@@ -260,7 +257,7 @@ function StatusChangeDialog({
 }>) {
   const { errorMessage, pending, run } = useAction();
   const { need, change } = pendingChange;
-  const texts = changes[change];
+  const texts = changeTexts[change];
 
   function confirm() {
     run(async () => {
@@ -306,7 +303,7 @@ function NeedsHeader({
             </Link>
           </p>
         </div>
-        <button type="button" onClick={onCreate} className={MAIN_ACTION_CLASS}>
+        <button type="button" onClick={onCreate} className={PRIMARY_CLASS}>
           Nova necessidade
         </button>
       </div>
@@ -332,9 +329,9 @@ function NotFound({ message }: Readonly<{ message: string }>) {
 function Notice({ message }: Readonly<{ message: string | null }>) {
   if (!message) return null;
   return (
-    <p role="status" className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+    <output className="block rounded-lg border border-emerald-200 bg-emerald-50 p-4">
       {message}
-    </p>
+    </output>
   );
 }
 
@@ -352,7 +349,6 @@ function NeedsManager({
   const [editingId, setEditingId] = useState<number | null>(null);
   const [pendingChange, setPendingChange] = useState<PendingChange | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const closeDialog = useCallback(() => setPendingChange(null), []);
 
   function replace(updated: Need) {
     setNeeds((current) => current.map((need) => (need.id === updated.id ? updated : need)));
@@ -381,7 +377,7 @@ function NeedsManager({
   function finishStatusChange(updated: Need) {
     if (!pendingChange) return;
     replace(updated);
-    setNotice(`“${updated.title}” ${changes[pendingChange.change].done}`);
+    setNotice(`“${updated.title}” ${changeTexts[pendingChange.change].done}`);
     setPendingChange(null);
   }
 
@@ -418,7 +414,7 @@ function NeedsManager({
         <StatusChangeDialog
           pendingChange={pendingChange}
           onDone={finishStatusChange}
-          onCancel={closeDialog}
+          onCancel={() => setPendingChange(null)}
         />
       )}
     </section>
@@ -429,7 +425,7 @@ export function InstitutionNeeds() {
   const { id } = useParams();
   const { institution, needs, setNeeds, errorMessage, loading } = useManagedNeeds(Number(id));
 
-  if (loading) return <p role="status">Carregando necessidades…</p>;
+  if (loading) return <output className="block">Carregando necessidades…</output>;
   if (errorMessage) return <NotFound message={errorMessage} />;
   if (!institution) return null;
   return <NeedsManager institution={institution} needs={needs} setNeeds={setNeeds} />;

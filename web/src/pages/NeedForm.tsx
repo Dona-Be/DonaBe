@@ -36,13 +36,7 @@ export function NeedForm({ existing, onSave, onCancel }: Readonly<NeedFormProps>
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    run(() =>
-      onSave({
-        title: values.title.trim(),
-        description: values.description.trim(),
-        quantity: values.quantity.trim(),
-      }),
-    );
+    run(() => onSave(values));
   }
 
   return (

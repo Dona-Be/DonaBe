@@ -54,18 +54,16 @@ export function joinPhone(phone: Phone): string | null {
   return onlyDigits(areaCode + number) || null;
 }
 
-const DATE_FORMAT = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" });
-
-export function formatDate(isoDate: string): string {
-  return DATE_FORMAT.format(new Date(isoDate));
-}
-
 const RELATIVE_TIME = new Intl.RelativeTimeFormat("pt-BR", { numeric: "auto" });
 const DATE = new Intl.DateTimeFormat("pt-BR");
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 const DAYS_IN_WEEK = 7;
+
+export function formatDate(isoDate: string): string {
+  return DATE.format(new Date(isoDate));
+}
 
 function midnight(date: Date): number {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();

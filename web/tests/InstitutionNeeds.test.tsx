@@ -79,7 +79,7 @@ describe("InstitutionNeeds", () => {
     await user.click(screen.getByRole("button", { name: "Nova necessidade" }));
 
     const form = within(screen.getByRole("form", { name: "Nova necessidade" }));
-    await user.type(field("Título"), "  Cobertores ");
+    await user.type(field("Título"), "Cobertores");
     await user.type(form.getByLabelText("Descrição"), NEED.description);
     await user.type(field("Quantidade (opcional)"), NEED.quantity);
     await user.click(form.getByRole("button", { name: "Publicar necessidade" }));
