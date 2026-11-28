@@ -1,70 +1,11 @@
-import { screen, within } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import {
-  DONOR,
-  INSTITUTION,
-  MANAGER_SESSION,
-  bodySent,
-  field,
-  mockFetch,
-  renderApp,
-  requestsMade,
-} from "./helpers";
-
-const PAGE = "/instituicoes/1/necessidades";
-const MY_INSTITUTIONS = { "GET /api/institutions/me": { body: [INSTITUTION] } };
-const LIST = "GET /api/institutions/1/needs";
-const NEED = {
-  id: 7,
-  title: "Cobertores",
-  description: "Cobertores de casal para o inverno.",
-  quantity: "20 unidades",
-  status: "open",
-  closed_at: null,
-};
-const FULFILLED = {
-  ...NEED,
-  id: 8,
-  title: "Fraldas",
-  quantity: null,
-  status: "fulfilled",
-  closed_at: "2026-11-20T15:00:00Z",
-};
-const CLOSED = {
-  ...NEED,
-  id: 9,
-  title: "Leite em pó",
-  status: "closed",
-  closed_at: FULFILLED.closed_at,
-};
-
-function withNeeds(needs: unknown[], responses: Parameters<typeof mockFetch>[0] = {}) {
-  return mockFetch({
-    ...MANAGER_SESSION,
-    ...MY_INSTITUTIONS,
-    [LIST]: { body: needs },
-    ...responses,
-  });
-}
-
-function card(title: string) {
-  return within(screen.getByRole("article", { name: title }));
-}
-
-async function loadedCard(title: string) {
-  return within(await screen.findByRole("article", { name: title }));
-}
-
-function filter(name: RegExp) {
-  return screen.getByRole("button", { name });
-}
+import { DONOR, mockFetch, renderApp, requestsMade } from "./helpers";
+import { CLOSED, FULFILLED, NEED, PAGE, card, filter, openNeeds } from "./needs";
 
 describe("InstitutionNeeds", () => {
-  it("shows a clear empty state and publishes the first need", async () => {
-    const fetchMock = withNeeds([], {
-      "POST /api/institutions/1/needs": { status: 201, body: NEED },
-    });
-    const user = renderApp(PAGE);
+  it("shows a clear empty state and cancels a new need", async () => {
+    const { user } = openNeeds([]);
 
     expect(
       await screen.findByRole("heading", { level: 1, name: "Necessidades – Aacd Ibirapuera" }),
@@ -74,35 +15,20 @@ describe("InstitutionNeeds", () => {
     ).toBeTruthy();
     expect(screen.queryByRole("group", { name: "Filtrar por status" })).toBeNull();
     await user.click(screen.getByRole("button", { name: "Nova necessidade" }));
-
-    const form = within(screen.getByRole("form", { name: "Nova necessidade" }));
-    await user.type(field("Título"), "Cobertores");
-    await user.type(form.getByLabelText("Descrição"), NEED.description);
-    await user.type(field("Quantidade (opcional)"), NEED.quantity);
-    await user.click(form.getByRole("button", { name: "Publicar necessidade" }));
-
-    expect((await screen.findByRole("status")).textContent).toBe("“Cobertores” foi publicada.");
-    expect(bodySent(fetchMock, "POST /api/institutions/1/needs")).toEqual({
-      title: "Cobertores",
-      description: NEED.description,
-      quantity: NEED.quantity,
-    });
+    expect(screen.queryByRole("heading", { name: /^Nenhuma necessidade/ })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Cancelar" }));
     expect(screen.queryByRole("form", { name: "Nova necessidade" })).toBeNull();
-    expect(card("Cobertores").getByText("Quantidade: 20 unidades")).toBeTruthy();
-    expect(filter(/^Abertas/).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("heading", { name: /^Nenhuma necessidade/ })).toBeTruthy();
   });
 
   it("lists the needs by status", async () => {
-    withNeeds([NEED, FULFILLED, CLOSED]);
-    const user = renderApp(PAGE);
+    const { user } = openNeeds([NEED, FULFILLED, CLOSED]);
 
     expect(await screen.findByRole("article", { name: "Cobertores" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: /^Nenhuma necessidade/ })).toBeNull();
     expect(filter(/^Abertas/).textContent).toBe("Abertas 1");
     expect(filter(/^Atendidas/).textContent).toBe("Atendidas 1");
     expect(filter(/^Encerradas/).textContent).toBe("Encerradas 1");
-    await user.click(screen.getByRole("button", { name: "Nova necessidade" }));
-    expect(screen.getByRole("form", { name: "Nova necessidade" })).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "Cancelar" }));
     expect(screen.queryByRole("article", { name: "Fraldas" })).toBeNull();
 
     await user.click(filter(/^Atendidas/));
@@ -113,91 +39,20 @@ describe("InstitutionNeeds", () => {
     expect(screen.queryByRole("article", { name: "Cobertores" })).toBeNull();
 
     await user.click(filter(/^Encerradas/));
+    expect(filter(/^Encerradas/).getAttribute("aria-pressed")).toBe("true");
     expect(card("Leite em pó").getByText("Encerrada em 20/11/2026")).toBeTruthy();
   });
 
   it("says when there is nothing in a status", async () => {
-    withNeeds([FULFILLED]);
-    const user = renderApp(PAGE);
+    const { user } = openNeeds([FULFILLED]);
 
-    expect(await screen.findByText(/^Nenhuma necessidade aberta/)).toBeTruthy();
+    expect(await screen.findByText("Nenhuma necessidade aberta no momento.")).toBeTruthy();
     await user.click(filter(/^Encerradas/));
     expect(screen.getByText("Nenhuma necessidade encerrada.")).toBeTruthy();
   });
 
-  it("edits a need and removes its quantity if left empty", async () => {
-    const edited = { ...NEED, title: "Cobertores de casal", quantity: null };
-    const fetchMock = withNeeds([NEED], { "PATCH /api/needs/7": { body: edited } });
-    const user = renderApp(PAGE);
-
-    await user.click((await loadedCard("Cobertores")).getByRole("button", { name: "Editar" }));
-    const form = within(screen.getByRole("form", { name: "Editar necessidade" }));
-    expect(form.getByLabelText<HTMLTextAreaElement>("Descrição").value).toBe(NEED.description);
-    await user.clear(field("Título"));
-    await user.type(field("Título"), edited.title);
-    await user.clear(field("Quantidade (opcional)"));
-    await user.click(form.getByRole("button", { name: "Salvar alterações" }));
-
-    expect((await screen.findByRole("status")).textContent).toBe("Alterações salvas.");
-    expect(bodySent(fetchMock, "PATCH /api/needs/7")).toEqual({
-      title: edited.title,
-      description: NEED.description,
-      quantity: "",
-    });
-    expect(card("Cobertores de casal").queryByText(/^Quantidade/)).toBeNull();
-  });
-
-  it("asks before marking a need as fulfilled", async () => {
-    const fetchMock = withNeeds([NEED], {
-      "POST /api/needs/7/fulfill": {
-        body: { ...NEED, status: "fulfilled", closed_at: FULFILLED.closed_at },
-      },
-    });
-    const user = renderApp(PAGE);
-
-    await user.click(
-      (await loadedCard("Cobertores")).getByRole("button", { name: "Marcar como atendida" }),
-    );
-    let dialog = within(screen.getByRole("alertdialog", { name: "Marcar como atendida?" }));
-    expect(dialog.getByText(/“Cobertores” deixa de aparecer para os doadores/)).toBeTruthy();
-    await user.click(dialog.getByRole("button", { name: "Voltar" }));
-    expect(screen.queryByRole("alertdialog")).toBeNull();
-    expect(requestsMade(fetchMock)).not.toContain("POST /api/needs/7/fulfill");
-
-    await user.click(card("Cobertores").getByRole("button", { name: "Marcar como atendida" }));
-    dialog = within(screen.getByRole("alertdialog"));
-    await user.click(dialog.getByRole("button", { name: "Marcar como atendida" }));
-
-    expect((await screen.findByRole("status")).textContent).toBe(
-      "“Cobertores” foi marcada como atendida.",
-    );
-    expect(screen.queryByRole("alertdialog")).toBeNull();
-    expect(filter(/^Abertas/).textContent).toBe("Abertas 0");
-    await user.click(filter(/^Atendidas/));
-    expect(card("Cobertores").getByText("Atendida em 20/11/2026")).toBeTruthy();
-  });
-
-  it("asks before closing a need and shows why it failed", async () => {
-    const notOpen = {
-      status: 409,
-      body: { detail: "Apenas necessidades abertas podem mudar de status." },
-    };
-    withNeeds([NEED], { "POST /api/needs/7/close": notOpen });
-    const user = renderApp(PAGE);
-
-    await user.click((await loadedCard("Cobertores")).getByRole("button", { name: "Encerrar" }));
-    const dialog = within(screen.getByRole("alertdialog", { name: "Encerrar necessidade?" }));
-    await user.click(dialog.getByRole("button", { name: "Encerrar" }));
-
-    expect((await dialog.findByRole("alert")).textContent).toBe(notOpen.body.detail);
-    await user.keyboard("{Escape}");
-    expect(screen.queryByRole("alertdialog")).toBeNull();
-    expect(filter(/^Abertas/).textContent).toBe("Abertas 1");
-  });
-
   it("is reachable from the manager's institutions", async () => {
-    withNeeds([NEED]);
-    const user = renderApp("/instituicoes");
+    const { user } = openNeeds([NEED], {}, "/instituicoes");
 
     await user.click(await screen.findByRole("link", { name: "Necessidades" }));
 
@@ -205,9 +60,7 @@ describe("InstitutionNeeds", () => {
   });
 
   it("does not open the needs of another manager's institution", async () => {
-    const fetchMock = withNeeds([]);
-
-    renderApp("/instituicoes/2/necessidades");
+    const { fetchMock } = openNeeds([], {}, "/instituicoes/2/necessidades");
 
     expect((await screen.findByRole("alert")).textContent).toBe(
       "Instituição não encontrada entre as suas instituições.",
