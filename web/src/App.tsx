@@ -9,6 +9,7 @@ import { MyInstitutions } from "./pages/MyInstitutions";
 import { InstitutionForm } from "./pages/InstitutionForm";
 import { EditInstitution } from "./pages/EditInstitution";
 import { InstitutionPage } from "./pages/InstitutionPage";
+import { InstitutionNeeds } from "./pages/InstitutionNeeds";
 import { routes } from "./routes";
 
 export function App() {
@@ -23,6 +24,10 @@ export function App() {
             <Route path={routes.institutions} element={<MyInstitutions />} />
             <Route path={routes.newInstitution} element={<InstitutionForm />} />
             <Route path={`${routes.institutions}/:id/editar`} element={<EditInstitution />} />
+            <Route
+              path={`${routes.institutions}/:id/necessidades`}
+              element={<InstitutionNeeds />}
+            />
           </Route>
         </Route>
       </Route>

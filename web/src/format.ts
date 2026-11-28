@@ -61,6 +61,10 @@ const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 const DAYS_IN_WEEK = 7;
 
+export function formatDate(isoDate: string): string {
+  return DATE.format(new Date(isoDate));
+}
+
 function midnight(date: Date): number {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
 }
