@@ -107,3 +107,8 @@ class NeedNotOpenError(DomainError):
 class InvalidSearchStrategyError(DomainError):
     def __init__(self, strategy: str) -> None:
         super().__init__(f"A estratégia de busca {strategy} não é válida.")
+
+
+class DonorWithoutLocationError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Informe seu CEP no perfil para buscar instituições perto de você.")

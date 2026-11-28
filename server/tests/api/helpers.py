@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from src.api.frontend_paths import LOGIN_FAILED_PATH, LOGIN_PATH
 from src.core.config import settings
+from src.domain.enums import Cause, Verdict
 from src.domain.user_profile import UserProfile
 from src.models.notification import Notification
 from src.models.user import Donor
@@ -40,6 +41,21 @@ NOTIFICATION_MESSAGE = "Sua doação para a necessidade Ração mudou para Em co
 Notify = Callable[..., Notification]
 INSTITUTIONS = "/api/institutions"
 MY_INSTITUTIONS = f"{INSTITUTIONS}/me"
+SEARCH = f"{INSTITUTIONS}/search"
+SAUDE = "Instituto Saúde Já"
+ABRIGO = "Abrigo Amigo"
+LAR = "Lar dos Idosos"
+DISTANTE = "Saúde Distante"
+# (legal name, km north of the donor or None without location, verdict, cause)
+INSTITUTIONS_AROUND = (
+    (LAR, 9.5, Verdict.LIKELY_CHARITY, Cause.ELDERLY),
+    (ABRIGO, 3, Verdict.NONPROFIT, Cause.ANIMALS),
+    (SAUDE, 0.5, Verdict.NONPROFIT, Cause.HEALTH),
+    ("Saúde Inativa", 1, Verdict.INACTIVE, Cause.HEALTH),
+    ("Saúde Improvável", 2, Verdict.UNLIKELY, Cause.HEALTH),
+    ("Sem Localização", None, Verdict.LIKELY_CHARITY, Cause.HEALTH),
+    (DISTANTE, 10.5, Verdict.LIKELY_CHARITY, Cause.HEALTH),
+)
 # What the API answers for the AACD sample of the CNPJ connector.
 INSTITUTION_PREVIEW = {
     "type": "association",
@@ -119,3 +135,7 @@ def look_up(client: TestClient, cnpj: str = AACD_TAX_ID) -> httpx2.Response:
 
 def register(client: TestClient, cnpj: str = AACD_TAX_ID, **details: Any) -> httpx2.Response:
     return client.post(INSTITUTIONS, json={"cnpj": cnpj, **details})
+
+
+def names(response: httpx2.Response) -> list[str]:
+    return [found["legal_name"] for found in response.json()]

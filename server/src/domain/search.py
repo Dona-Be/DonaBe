@@ -3,11 +3,14 @@ from dataclasses import dataclass
 from src.domain.enums import Cause, Verdict
 
 HIDDEN_VERDICTS = (Verdict.INACTIVE, Verdict.UNLIKELY)
+DEFAULT_SEARCH_RADIUS_KM = 10
+# best_match scores the whole radius, so measure before raising it
+MAX_SEARCH_RADIUS_KM = 20
 
 
 @dataclass(frozen=True)
 class SearchFilters:
-    radius_km: float = 10
+    radius_km: float = DEFAULT_SEARCH_RADIUS_KM
     causes: tuple[Cause, ...] = ()
     name: str | None = None
 
