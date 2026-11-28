@@ -61,7 +61,7 @@ function NeedsSection({ needs }: Readonly<{ needs: OpenNeed[] }>) {
         ) : (
           <ul className="space-y-4">
             {needs.map((need) => (
-              <li key={need.id}>
+              <li key={need.id} className="wrap-anywhere">
                 <h3 className="font-bold">{need.title}</h3>
                 {need.quantity && <p className="text-slate-600">Quantidade: {need.quantity}</p>}
                 <p className="whitespace-pre-line">{need.description}</p>

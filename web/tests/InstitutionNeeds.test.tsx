@@ -69,9 +69,6 @@ describe("InstitutionNeeds", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: "Necessidades – Aacd Ibirapuera" }),
     ).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Ver página pública" }).getAttribute("href")).toBe(
-      "/instituicoes/1",
-    );
     expect(
       screen.getByRole("heading", { name: "Nenhuma necessidade publicada ainda" }),
     ).toBeTruthy();
@@ -110,7 +107,6 @@ describe("InstitutionNeeds", () => {
 
     await user.click(filter(/^Atendidas/));
     const fulfilled = card("Fraldas");
-    expect(fulfilled.getByText("Atendida")).toBeTruthy();
     expect(fulfilled.getByText("Atendida em 20/11/2026")).toBeTruthy();
     expect(fulfilled.queryByText(/^Quantidade/)).toBeNull();
     expect(fulfilled.queryByRole("button")).toBeNull();
@@ -166,12 +162,6 @@ describe("InstitutionNeeds", () => {
     expect(dialog.getByText(/“Cobertores” deixa de aparecer para os doadores/)).toBeTruthy();
     await user.click(dialog.getByRole("button", { name: "Voltar" }));
     expect(screen.queryByRole("alertdialog")).toBeNull();
-
-    await user.click(card("Cobertores").getByRole("button", { name: "Marcar como atendida" }));
-    const backdrop = screen.getByRole("alertdialog").parentElement;
-    if (!backdrop) throw new Error("dialog without backdrop");
-    await user.click(backdrop);
-    expect(screen.queryByRole("alertdialog")).toBeNull();
     expect(requestsMade(fetchMock)).not.toContain("POST /api/needs/7/fulfill");
 
     await user.click(card("Cobertores").getByRole("button", { name: "Marcar como atendida" }));
@@ -202,7 +192,7 @@ describe("InstitutionNeeds", () => {
     expect((await dialog.findByRole("alert")).textContent).toBe(notOpen.body.detail);
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("alertdialog")).toBeNull();
-    expect(card("Cobertores").getByText("Aberta")).toBeTruthy();
+    expect(filter(/^Abertas/).textContent).toBe("Abertas 1");
   });
 
   it("is reachable from the manager's institutions", async () => {

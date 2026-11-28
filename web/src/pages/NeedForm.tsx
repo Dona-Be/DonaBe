@@ -43,7 +43,7 @@ export function NeedForm({ existing, onSave, onCancel }: Readonly<NeedFormProps>
     <form
       aria-label={heading}
       onSubmit={handleSubmit}
-      className="space-y-5 rounded-xl border-2 border-sky-200 p-5"
+      className="space-y-5 rounded-xl border border-slate-200 p-5"
     >
       <h2 className="text-xl font-bold">{heading}</h2>
       <TextField

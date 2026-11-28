@@ -12,7 +12,8 @@ import { useAction } from "../hooks/useAction";
 import { routes } from "../routes";
 import type { Profile } from "../types/user";
 
-const SAVED_CLASS = "block rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-800";
+export const SAVED_CLASS =
+  "block rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-800";
 
 export function ProfileForm({ user }: Readonly<{ user: Profile }>) {
   const { setUser } = useAuth();

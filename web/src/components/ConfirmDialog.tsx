@@ -23,26 +23,30 @@ export function ConfirmDialog({
 }: Readonly<ConfirmDialogProps>) {
   const id = useId();
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
+    const opener = document.activeElement;
     cancelRef.current?.focus();
+    return () => {
+      if (opener instanceof HTMLElement) opener.focus();
+    };
   }, []);
 
   useEffect(() => {
-    function closeOnEscape(event: KeyboardEvent) {
+    function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape" && !pending) onCancel();
+      if (event.key !== "Tab") return;
+      event.preventDefault();
+      const next = event.target === cancelRef.current ? confirmRef : cancelRef;
+      next.current?.focus();
     }
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [pending, onCancel]);
 
   return (
-    <div
-      onClick={(event) => {
-        if (event.target === event.currentTarget && !pending) onCancel();
-      }}
-      className="fixed inset-0 z-10 flex items-end justify-center bg-slate-900/40 p-4 sm:items-center"
-    >
+    <div className="fixed inset-0 z-10 flex items-end justify-center bg-slate-900/40 p-4 sm:items-center">
       <div
         role="alertdialog"
         aria-modal="true"
@@ -53,7 +57,7 @@ export function ConfirmDialog({
         <h2 id={`${id}-title`} className="text-2xl font-extrabold">
           {title}
         </h2>
-        <p id={`${id}-message`} className="text-slate-600">
+        <p id={`${id}-message`} className="text-slate-600 wrap-anywhere">
           {message}
         </p>
         {errorMessage && <ErrorMessage message={errorMessage} />}
@@ -61,7 +65,13 @@ export function ConfirmDialog({
           <SecondaryButton ref={cancelRef} disabled={pending} onClick={onCancel}>
             Voltar
           </SecondaryButton>
-          <button type="button" disabled={pending} onClick={onConfirm} className={PRIMARY_CLASS}>
+          <button
+            ref={confirmRef}
+            type="button"
+            disabled={pending}
+            onClick={onConfirm}
+            className={PRIMARY_CLASS}
+          >
             {confirmLabel}
           </button>
         </div>
