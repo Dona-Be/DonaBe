@@ -77,13 +77,7 @@ def search_response(result: SearchResult) -> InstitutionSearchResult:
 @router.get(
     "/search",
     summary="Search the institutions near you",
-    description=(
-        "20 per page, within max_distance_km of your location. nearest orders by distance; "
-        "best_match orders by score and explains it in match_reasons; cause_text keeps the "
-        "institutions with any of the causes and with q in their name, nearest first. Only "
-        "cause_text uses causes and q. score is null and match_reasons is empty outside "
-        "best_match."
-    ),
+    description="20 per page. Only best_match scores, and only cause_text uses causes and q.",
 )
 def search_institutions(
     donor: CurrentDonor,

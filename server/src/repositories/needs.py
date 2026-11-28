@@ -19,8 +19,7 @@ class NeedRepository(ABC):
     def list_by_institution(self, institution_id: int, status: NeedStatus | None) -> list[Need]: ...
 
     @abstractmethod
-    def count_open_by_institution(self, institution_ids: Sequence[int]) -> dict[int, int]:
-        """Institutions without open needs are left out of the result."""
+    def count_open_by_institution(self, institution_ids: Sequence[int]) -> dict[int, int]: ...
 
 
 class SqlAlchemyNeedRepository(NeedRepository):
@@ -41,8 +40,6 @@ class SqlAlchemyNeedRepository(NeedRepository):
         return list(self._session.scalars(query.order_by(Need.id)))
 
     def count_open_by_institution(self, institution_ids: Sequence[int]) -> dict[int, int]:
-        if not institution_ids:
-            return {}
         query = (
             select(Need.institution_id, func.count())
             .where(Need.institution_id.in_(institution_ids), Need.status == NeedStatus.OPEN)

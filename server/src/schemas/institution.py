@@ -91,11 +91,11 @@ class InstitutionPage(PublicInstitution):
 
 
 class InstitutionSearch(StrictText):
-    """Query parameters of the search. Only cause_text uses causes and q."""
+    model_config = ConfigDict(extra="forbid")
 
     strategy: SearchStrategyName = SearchStrategyName.NEAREST
     max_distance_km: float = Field(default=DEFAULT_SEARCH_RADIUS_KM, gt=0, le=MAX_SEARCH_RADIUS_KM)
-    causes: list[Cause] = Field(default_factory=list)
+    causes: list[Cause] = Field(default_factory=list, max_length=len(Cause))
     q: str | None = Field(default=None, max_length=MAX_TEXT_LENGTH)
     page: int = Field(default=1, ge=1, le=MAX_INTEGER)
 
@@ -112,6 +112,6 @@ class InstitutionSearchResult(BaseModel):
     verdict: Verdict
     distance_km: float
     score: int | None
-    # Not "reasons": an institution already has reasons, the ones behind its CNPJ verdict.
+    # Not "reasons", which explain the CNPJ verdict
     match_reasons: list[str]
     open_needs_count: int

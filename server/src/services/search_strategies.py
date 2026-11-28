@@ -1,3 +1,4 @@
+import heapq
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
@@ -44,12 +45,16 @@ class NearestStrategy(SearchStrategy):
 
 class BestMatchStrategy(SearchStrategy):
     def search(self, donor: Donor, filters: SearchFilters, page: SearchPage) -> list[SearchResult]:
-        rows = self._repository.list_within(donor.id, filters.radius_km, page=None)
-        matches = [
-            self._scored(institution, donor, distance_km) for institution, distance_km in rows
-        ]
-        matches.sort(key=lambda match: (-match.score, match.distance_km, match.institution.id))
-        return matches[page.offset : page.offset + page.size]
+        # Light rows are scored, and only the shown page is loaded in full
+        candidates = self._repository.list_match_candidates(donor.id, filters.radius_km)
+        matches = (self._scored(row, donor, row.distance_km) for row in candidates)
+        shown = heapq.nsmallest(
+            page.offset + page.size,
+            matches,
+            key=lambda match: (-match.score, match.distance_km, match.institution.id),
+        )[page.offset :]
+        institutions = self._repository.find_by_ids([match.institution.id for match in shown])
+        return [replace(match, institution=institutions[match.institution.id]) for match in shown]
 
     @staticmethod
     def _scored(institution: Institution, donor: Donor, distance_km: float) -> SearchResult:
@@ -90,11 +95,9 @@ class InstitutionSearchService:
             strategy = self._strategies[strategy_name]
         except KeyError as error:
             raise InvalidSearchStrategyError(strategy_name) from error
-        # Without a location the radius has no center, and the search would come back empty.
         if donor.location is None:
             raise DonorWithoutLocationError
         results = strategy.search(donor, filters, page)
-        # Counted after the strategy, so best_match counts only its page and not every candidate.
         open_needs = self._needs.count_open_by_institution(
             [result.institution.id for result in results]
         )

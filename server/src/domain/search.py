@@ -4,7 +4,7 @@ from src.domain.enums import Cause, Verdict
 
 HIDDEN_VERDICTS = (Verdict.INACTIVE, Verdict.UNLIKELY)
 DEFAULT_SEARCH_RADIUS_KM = 10
-# best_match scores every institution in the radius, so a larger radius must be measured first.
+# best_match scores the whole radius, so measure before raising it
 MAX_SEARCH_RADIUS_KM = 20
 
 
