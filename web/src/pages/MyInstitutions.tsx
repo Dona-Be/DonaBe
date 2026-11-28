@@ -79,6 +79,12 @@ export function MyInstitutions() {
                     Ver página
                   </Link>
                   <Link
+                    to={`${routes.institutions}/${String(institution.id)}/necessidades`}
+                    className={ACTION_CLASS}
+                  >
+                    Necessidades
+                  </Link>
+                  <Link
                     to={`${routes.institutions}/${String(institution.id)}/editar`}
                     className={ACTION_CLASS}
                   >

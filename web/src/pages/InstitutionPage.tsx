@@ -36,7 +36,7 @@ function AboutSection({ institution }: Readonly<InstitutionProps>) {
     <Section title="Sobre a instituição">
       <div className="space-y-4 sm:col-span-2">
         {institution.description && (
-          <p className="whitespace-pre-line">{institution.description}</p>
+          <p className="whitespace-pre-line wrap-anywhere">{institution.description}</p>
         )}
         {institution.causes.length > 0 && (
           <ul aria-label="Causas atendidas" className="flex flex-wrap gap-2">
@@ -61,7 +61,7 @@ function NeedsSection({ needs }: Readonly<{ needs: OpenNeed[] }>) {
         ) : (
           <ul className="space-y-4">
             {needs.map((need) => (
-              <li key={need.id}>
+              <li key={need.id} className="wrap-anywhere">
                 <h3 className="font-bold">{need.title}</h3>
                 {need.quantity && <p className="text-slate-600">Quantidade: {need.quantity}</p>}
                 <p className="whitespace-pre-line">{need.description}</p>

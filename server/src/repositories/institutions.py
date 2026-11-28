@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
+from typing import Any
 
 from psycopg.errors import UniqueViolation
-from sqlalchemy import func, or_, select
+from sqlalchemy import ColumnElement, Row, and_, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -35,6 +37,12 @@ class InstitutionRepository(ABC):
         causes: tuple[Cause, ...] = (),
         name: str | None = None,
     ) -> list[tuple[Institution, float]]: ...
+
+    @abstractmethod
+    def list_match_candidates(self, donor_id: int, radius_km: float) -> Iterator[Row[Any]]: ...
+
+    @abstractmethod
+    def find_by_ids(self, institution_ids: list[int]) -> dict[int, Institution]: ...
 
 
 class SqlAlchemyInstitutionRepository(InstitutionRepository):
@@ -70,13 +78,8 @@ class SqlAlchemyInstitutionRepository(InstitutionRepository):
         causes: tuple[Cause, ...] = (),
         name: str | None = None,
     ) -> list[tuple[Institution, float]]:
-        donor_location = select(Donor.location).where(Donor.id == donor_id).scalar_subquery()
-        distance_km = func.ST_Distance(Institution.location, donor_location) / METERS_PER_KM
-        query = select(Institution, distance_km).where(
-            Institution.verdict.not_in(HIDDEN_VERDICTS),
-            Institution.location.is_not(None),
-            func.ST_DWithin(Institution.location, donor_location, radius_km * METERS_PER_KM),
-        )
+        distance_km, visible = self._visible_within(donor_id, radius_km)
+        query = select(Institution, distance_km).where(visible)
         if causes:
             query = query.where(Institution.causes.overlap(list(causes)))
         if name and name.strip():
@@ -91,3 +94,32 @@ class SqlAlchemyInstitutionRepository(InstitutionRepository):
         if page is not None:
             query = query.limit(page.size).offset(page.offset)
         return list(self._session.execute(query).tuples())
+
+    def list_match_candidates(self, donor_id: int, radius_km: float) -> Iterator[Row[Any]]:
+        distance_km, visible = self._visible_within(donor_id, radius_km)
+        query = select(
+            Institution.id,
+            Institution.causes,
+            Institution.verdict,
+            Institution.postal_code,
+            distance_km.label("distance_km"),
+        ).where(visible)
+        # Streamed in batches, so not every row is in memory at once
+        return self._session.execute(query.execution_options(yield_per=1000))
+
+    def find_by_ids(self, institution_ids: list[int]) -> dict[int, Institution]:
+        query = select(Institution).where(Institution.id.in_(institution_ids))
+        return {institution.id: institution for institution in self._session.scalars(query)}
+
+    @staticmethod
+    def _visible_within(
+        donor_id: int, radius_km: float
+    ) -> tuple[ColumnElement[Any], ColumnElement[bool]]:
+        donor_location = select(Donor.location).where(Donor.id == donor_id).scalar_subquery()
+        distance_km = func.ST_Distance(Institution.location, donor_location) / METERS_PER_KM
+        visible = and_(
+            Institution.verdict.not_in(HIDDEN_VERDICTS),
+            Institution.location.is_not(None),
+            func.ST_DWithin(Institution.location, donor_location, radius_km * METERS_PER_KM),
+        )
+        return distance_km, visible

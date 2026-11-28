@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from src.domain.enums import NeedStatus
@@ -16,6 +17,9 @@ class NeedRepository(ABC):
 
     @abstractmethod
     def list_by_institution(self, institution_id: int, status: NeedStatus | None) -> list[Need]: ...
+
+    @abstractmethod
+    def count_open_by_institution(self, institution_ids: Sequence[int]) -> dict[int, int]: ...
 
 
 class SqlAlchemyNeedRepository(NeedRepository):
@@ -34,3 +38,11 @@ class SqlAlchemyNeedRepository(NeedRepository):
         if status is not None:
             query = query.where(Need.status == status)
         return list(self._session.scalars(query.order_by(Need.id)))
+
+    def count_open_by_institution(self, institution_ids: Sequence[int]) -> dict[int, int]:
+        query = (
+            select(Need.institution_id, func.count())
+            .where(Need.institution_id.in_(institution_ids), Need.status == NeedStatus.OPEN)
+            .group_by(Need.institution_id)
+        )
+        return dict(self._session.execute(query).tuples().all())

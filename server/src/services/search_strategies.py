@@ -1,22 +1,21 @@
+import heapq
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
-from src.domain.exceptions import InvalidSearchStrategyError
+from src.domain.enums import SearchStrategyName
+from src.domain.exceptions import DonorWithoutLocationError, InvalidSearchStrategyError
 from src.domain.search import SearchFilters, SearchPage
 from src.models.institution import Institution
 from src.models.user import Donor
 from src.repositories.institutions import InstitutionRepository
+from src.repositories.needs import NeedRepository
 from src.services.match_score import (
     BaseMatchScore,
     PreferredCauseDecorator,
     ProximityDecorator,
     VerifiedCnpjDecorator,
 )
-
-STRATEGY_NEAREST = "nearest"
-STRATEGY_BEST_MATCH = "best_match"
-STRATEGY_CAUSE_TEXT = "cause_text"
 
 
 @dataclass(frozen=True)
@@ -25,6 +24,7 @@ class SearchResult:
     distance_km: float
     score: int | None = None
     reasons: tuple[str, ...] = ()
+    open_needs_count: int = 0
 
 
 class SearchStrategy(ABC):
@@ -45,12 +45,16 @@ class NearestStrategy(SearchStrategy):
 
 class BestMatchStrategy(SearchStrategy):
     def search(self, donor: Donor, filters: SearchFilters, page: SearchPage) -> list[SearchResult]:
-        rows = self._repository.list_within(donor.id, filters.radius_km, page=None)
-        matches = [
-            self._scored(institution, donor, distance_km) for institution, distance_km in rows
-        ]
-        matches.sort(key=lambda match: (-match.score, match.distance_km, match.institution.id))
-        return matches[page.offset : page.offset + page.size]
+        # Light rows are scored, and only the shown page is loaded in full
+        candidates = self._repository.list_match_candidates(donor.id, filters.radius_km)
+        matches = (self._scored(row, donor, row.distance_km) for row in candidates)
+        shown = heapq.nsmallest(
+            page.offset + page.size,
+            matches,
+            key=lambda match: (-match.score, match.distance_km, match.institution.id),
+        )[page.offset :]
+        institutions = self._repository.find_by_ids([match.institution.id for match in shown])
+        return [replace(match, institution=institutions[match.institution.id]) for match in shown]
 
     @staticmethod
     def _scored(institution: Institution, donor: Donor, distance_km: float) -> SearchResult:
@@ -72,11 +76,12 @@ class CauseTextStrategy(SearchStrategy):
 
 
 class InstitutionSearchService:
-    def __init__(self, repository: InstitutionRepository) -> None:
+    def __init__(self, repository: InstitutionRepository, needs: NeedRepository) -> None:
+        self._needs = needs
         self._strategies: Mapping[str, SearchStrategy] = {
-            STRATEGY_NEAREST: NearestStrategy(repository),
-            STRATEGY_BEST_MATCH: BestMatchStrategy(repository),
-            STRATEGY_CAUSE_TEXT: CauseTextStrategy(repository),
+            SearchStrategyName.NEAREST: NearestStrategy(repository),
+            SearchStrategyName.BEST_MATCH: BestMatchStrategy(repository),
+            SearchStrategyName.CAUSE_TEXT: CauseTextStrategy(repository),
         }
 
     def search(
@@ -90,4 +95,13 @@ class InstitutionSearchService:
             strategy = self._strategies[strategy_name]
         except KeyError as error:
             raise InvalidSearchStrategyError(strategy_name) from error
-        return strategy.search(donor, filters, page)
+        if donor.location is None:
+            raise DonorWithoutLocationError
+        results = strategy.search(donor, filters, page)
+        open_needs = self._needs.count_open_by_institution(
+            [result.institution.id for result in results]
+        )
+        return [
+            replace(result, open_needs_count=open_needs.get(result.institution.id, 0))
+            for result in results
+        ]

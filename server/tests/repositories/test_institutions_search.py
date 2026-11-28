@@ -1,18 +1,14 @@
 import pytest
-from geoalchemy2 import WKTElement
 from sqlalchemy.orm import Session
 
 from src.domain.enums import Cause, Verdict
 from src.domain.search import SearchPage
-from src.models.institution import WGS84_SRID, Institution
+from src.models.institution import Institution
 from src.models.user import Donor, Manager
 from src.repositories.institutions import SqlAlchemyInstitutionRepository
 from tests.fakes import USER_EMAIL
-from tests.models.helpers import MANAGER_EMAIL, new_institution, profile
+from tests.models.helpers import MANAGER_EMAIL, new_institution, point_at, profile
 
-DONOR_LATITUDE = -23.55
-DONOR_LONGITUDE = -46.63
-KM_PER_DEGREE_OF_LATITUDE = 110.75
 FULLWIDTH_PERCENT = chr(0xFF05)
 FULLWIDTH_LOW_LINE = chr(0xFF3F)
 LAR = "Lar 100% Animal"
@@ -27,11 +23,6 @@ INSTITUTIONS = (
     ("Saúde Improvável", None, 2, Verdict.UNLIKELY, [Cause.HEALTH]),
     ("Saúde Distante", None, 15, Verdict.LIKELY_CHARITY, [Cause.HEALTH]),
 )
-
-
-def point_at(km_north: float) -> WKTElement:
-    latitude = DONOR_LATITUDE + km_north / KM_PER_DEGREE_OF_LATITUDE
-    return WKTElement(f"POINT({DONOR_LONGITUDE} {latitude})", srid=WGS84_SRID)
 
 
 def save_institutions(db_session: Session) -> None:

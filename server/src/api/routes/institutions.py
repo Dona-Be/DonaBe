@@ -1,17 +1,23 @@
-from fastapi import APIRouter, Depends, status
+from typing import Annotated
 
-from src.api.authentication import CurrentManager, get_current_manager
-from src.api.dependencies import InstitutionServiceDep
+from fastapi import APIRouter, Depends, Query, status
+
+from src.api.authentication import CurrentDonor, CurrentManager, get_current_manager
+from src.api.dependencies import InstitutionSearchServiceDep, InstitutionServiceDep
 from src.api.parameters import DatabaseId
 from src.api.rate_limits import limit_cep_lookups, limit_cnpj_lookups
+from src.domain.search import SearchPage
 from src.models.institution import Institution
 from src.schemas.institution import (
     InstitutionChanges,
     InstitutionPage,
     InstitutionPreview,
+    InstitutionSearch,
+    InstitutionSearchResult,
     NewInstitution,
     PublicInstitution,
 )
+from src.services.search_strategies import SearchResult
 
 router = APIRouter(prefix="/institutions", tags=["institutions"])
 
@@ -49,6 +55,37 @@ def list_my_institutions(
     manager: CurrentManager, service: InstitutionServiceDep
 ) -> list[Institution]:
     return service.list_of(manager)
+
+
+def search_response(result: SearchResult) -> InstitutionSearchResult:
+    institution = result.institution
+    return InstitutionSearchResult(
+        id=institution.id,
+        type=institution.type,
+        legal_name=institution.legal_name,
+        trade_name=institution.trade_name,
+        causes=institution.causes,
+        verdict=institution.verdict,
+        distance_km=result.distance_km,
+        score=result.score,
+        match_reasons=list(result.reasons),
+        open_needs_count=result.open_needs_count,
+    )
+
+
+# Declared before /{institution_id}, or "search" would be read as an id.
+@router.get(
+    "/search",
+    summary="Search the institutions near you",
+    description="20 per page. Only best_match scores, and only cause_text uses causes and q.",
+)
+def search_institutions(
+    donor: CurrentDonor,
+    service: InstitutionSearchServiceDep,
+    search: Annotated[InstitutionSearch, Query()],
+) -> list[InstitutionSearchResult]:
+    results = service.search(donor, search.strategy, search.filters(), SearchPage(search.page))
+    return [search_response(result) for result in results]
 
 
 @router.get(

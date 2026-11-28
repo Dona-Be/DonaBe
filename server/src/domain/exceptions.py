@@ -127,3 +127,6 @@ class ActiveIntentAlreadyExistsError(DomainError):
 class NotIntentDonorError(DomainError):
     def __init__(self) -> None:
         super().__init__("Apenas o doador desta intenção pode alterá-la.")
+class DonorWithoutLocationError(DomainError):
+    def __init__(self) -> None:
+        super().__init__("Informe seu CEP no perfil para buscar instituições perto de você.")

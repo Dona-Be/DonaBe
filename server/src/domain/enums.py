@@ -62,3 +62,9 @@ class NotificationType(StrEnum):
     INTENT_CANCELLED = "intent_cancelled"
     INTENT_DELIVERED = "intent_delivered"
     INTENT_STATUS_CHANGED = "intent_status_changed"
+
+
+class SearchStrategyName(StrEnum):
+    NEAREST = "nearest"
+    BEST_MATCH = "best_match"
+    CAUSE_TEXT = "cause_text"

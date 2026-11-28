@@ -9,15 +9,21 @@ from src.api.dependencies import get_address_lookup, get_company_lookup, get_htt
 from src.api.rate_limits import CEP_LOOKUPS_PER_ACCOUNT, CNPJ_LOOKUPS_PER_ACCOUNT
 from src.connectors.addresses import address_from
 from src.connectors.companies import company_from
-from src.domain.enums import NotificationType
+from src.domain.enums import Cause, NotificationType
 from src.models.donation_intent import DonationIntent
 from src.models.notification import Notification
 from src.models.user import Donor, Manager, User
-from tests.api.helpers import NOTIFICATION_MESSAGE, Notify, create_donor, sign_up
+from tests.api.helpers import (
+    GOOGLE_CALLBACK,
+    NOTIFICATION_MESSAGE,
+    Notify,
+    create_donor,
+    sign_up,
+)
 from tests.connectors.fakes import FakeApi
 from tests.connectors.samples import AACD, AACD_TAX_ID, PAULISTA
-from tests.fakes import FakeAddressLookup, FakeCompanyLookup
-from tests.models.helpers import register_intent, save_need
+from tests.fakes import USER_EMAIL, FakeAddressLookup, FakeCompanyLookup
+from tests.models.helpers import point_at, profile, register_intent, save_need
 
 
 @pytest.fixture(autouse=True)
@@ -29,6 +35,21 @@ def reset_rate_limits() -> None:
 @pytest.fixture
 def donor(db_session: Session) -> Donor:
     return create_donor(db_session)
+
+
+@pytest.fixture
+def located_donor_client(client: TestClient, db_session: Session) -> TestClient:
+    donor = Donor.from_profile(
+        profile(USER_EMAIL),
+        postal_code="01310200",
+        location=point_at(0),
+        preferred_causes=[Cause.ANIMALS],
+    )
+    db_session.add(donor)
+    db_session.commit()
+    # The donor is already registered, so the Google login starts the session.
+    client.get(GOOGLE_CALLBACK, follow_redirects=False)
+    return client
 
 
 @pytest.fixture
